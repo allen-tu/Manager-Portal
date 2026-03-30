@@ -1,0 +1,3687 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>銷售案 Forecast 分析系統</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif; font-size: 13px; background: #f0f2f5; color: #333; }
+
+  /* ── Upload Section ── */
+  .upload-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0d2347 0%, #1a3a6b 60%, #2d5ea8 100%); }
+  .upload-box  { background: white; border-radius: 16px; padding: 48px 56px; max-width: 520px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.35); }
+  .upload-box h1 { font-size: 22px; font-weight: 700; color: #1a3a6b; letter-spacing: 1px; margin-bottom: 6px; }
+  .upload-box .sub { font-size: 13px; color: #888; margin-bottom: 32px; }
+  .drop-zone { border: 2px dashed #c0d0e8; border-radius: 10px; padding: 36px 24px; cursor: pointer; transition: all .2s; margin-bottom: 20px; }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #2d5ea8; background: #eef4ff; }
+  .drop-zone .icon { font-size: 40px; margin-bottom: 12px; }
+  .drop-zone p   { font-size: 14px; color: #555; margin-bottom: 4px; }
+  .drop-zone .hint { font-size: 12px; color: #aaa; }
+  .upload-btn { display: inline-block; background: #1a3a6b; color: white; padding: 11px 28px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; letter-spacing: 0.5px; margin-top: 6px; transition: background .2s; }
+  .upload-btn:hover { background: #2d5ea8; }
+  #file-input { display: none; }
+  .format-note { font-size: 11px; color: #bbb; margin-top: 18px; }
+  .error-msg { color: #c62828; font-size: 13px; margin-top: 12px; display: none; }
+
+  /* ── App layout ── */
+  .header { background: linear-gradient(135deg, #1a3a6b 0%, #2d5ea8 100%); color: white; padding: 18px 30px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .header-left h1 { font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+  .header-left .subtitle { font-size: 12px; margin-top: 4px; opacity: 0.80; }
+  .reload-btn { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4); color: white; padding: 7px 16px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; white-space: nowrap; transition: background .2s; }
+  .reload-btn:hover { background: rgba(255,255,255,0.28); }
+
+  .container { padding: 18px 28px; max-width: 1440px; margin: 0 auto; }
+
+  /* ── Cards ── */
+  .summary-cards { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+  .card { background: white; border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 130px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-top: 4px solid; }
+  .card.max   { border-color: #00897B; }
+  .card.base  { border-color: #4CAF50; }
+  .card.acp   { border-color: #2196F3; }
+  .card.fix   { border-color: #FF9800; }
+  .card.opt   { border-color: #9C27B0; }
+  .card.total { border-color: #37474F; }
+  .card-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .card-value { font-size: 18px; font-weight: 700; color: #222; }
+
+  /* ── Filter + Search bar ── */
+  .ctrl-bar { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+              padding: 12px 18px; margin-bottom: 14px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .filter-label { font-size: 13px; font-weight: 700; color: #444; white-space: nowrap; }
+  .filter-checks { display: flex; gap: 12px; flex-wrap: wrap; }
+  .filter-check { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  .filter-check input[type=checkbox] { cursor: pointer; width: 14px; height: 14px; accent-color: #2d5ea8; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .dot-max  { background: #00897B; }
+  .dot-base { background: #4CAF50; }
+  .dot-acp  { background: #2196F3; }
+  .dot-fix  { background: #FF9800; }
+  .dot-opt  { background: #9C27B0; }
+  .filter-btn { padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+  .filter-btn-all  { border: 1px solid #2d5ea8; color: #2d5ea8; background: white; }
+  .filter-btn-none { border: 1px solid #aaa;    color: #666;    background: white; }
+
+  .search-wrap { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .search-input { border: 1px solid #d0d8e8; border-radius: 5px; padding: 5px 10px; font-size: 12px; width: 200px; outline: none; }
+  .search-input:focus { border-color: #2d5ea8; }
+  .search-clear { font-size: 12px; color: #aaa; cursor: pointer; padding: 0 4px; }
+  .search-clear:hover { color: #c00; }
+
+  /* ── Multi-select dropdown ── */
+  .multi-select { position: relative; user-select: none; }
+  .ms-trigger { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #c8d5e8; border-radius: 5px;
+                padding: 5px 26px 5px 10px; background: white; cursor: pointer; font-size: 12px; font-weight: 600;
+                color: #333; min-width: 140px; white-space: nowrap; position: relative; transition: border-color .15s; }
+  .ms-trigger::after { content: '▾'; position: absolute; right: 8px; color: #888; font-size: 11px; }
+  .ms-trigger:hover, .ms-trigger.open { border-color: #2d5ea8; color: #1a3a6b; }
+  .ms-panel { position: absolute; top: calc(100% + 4px); left: 0; z-index: 500; background: white;
+              border: 1px solid #c8d5e8; border-radius: 6px; box-shadow: 0 6px 20px rgba(0,0,0,0.13);
+              min-width: 170px; max-height: 280px; overflow-y: auto; display: none; }
+  .ms-panel.open { display: block; }
+  .ms-panel-head { padding: 6px 10px 5px; border-bottom: 1px solid #eef0f4; display: flex; gap: 10px; background: #f8f9fb; border-radius: 6px 6px 0 0; }
+  .ms-panel-head a { font-size: 11px; color: #2d5ea8; cursor: pointer; font-weight: 600; }
+  .ms-panel-head a:hover { text-decoration: underline; }
+  .ms-item { display: flex; align-items: center; gap: 7px; padding: 6px 12px; cursor: pointer; font-size: 12px; transition: background .1s; }
+  .ms-item:hover { background: #f0f5ff; }
+  .ms-item input { cursor: pointer; width: 13px; height: 13px; accent-color: #2d5ea8; flex-shrink: 0; }
+  .ms-badge { display: inline-block; background: #2d5ea8; color: white; border-radius: 10px; font-size: 10px;
+              font-weight: 700; padding: 1px 6px; margin-left: 2px; }
+
+  /* ── 達成率 Section ── */
+  .achieve-wrap { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 14px 18px 18px; margin-bottom: 18px; }
+  .achieve-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .achieve-hd-title { font-size: 14px; font-weight: 700; color: #444; }
+  .achieve-year-sel { font-size: 12px; border: 1px solid #ddd; border-radius: 4px; padding: 3px 8px; color: #555; cursor: pointer; margin-right: 8px; }
+  .achieve-cards { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 6px; }
+  .achieve-cards::-webkit-scrollbar { height: 5px; }
+  .achieve-cards::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+  .achieve-card { min-width: 230px; max-width: 260px; background: #f8f9fc; border: 1px solid #e8eaf0; border-radius: 8px; padding: 13px 15px; flex-shrink: 0; }
+  .achieve-card-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .achieve-bu-tag { background: #1a3a6b; color: white; padding: 3px 9px; border-radius: 4px; font-size: 12px; font-weight: 700; }
+  .achieve-quota-lbl { font-size: 11px; color: #999; }
+  .achieve-row-lbl { font-size: 11px; font-weight: 600; color: #555; margin-bottom: 5px; }
+  .achieve-bar-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+  .achieve-bar-track { flex: 1; height: 9px; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
+  .achieve-bar-fill { height: 100%; border-radius: 5px; transition: width .5s ease; }
+  .achieve-pct { font-size: 13px; font-weight: 700; min-width: 50px; text-align: right; }
+  .achieve-sub { font-size: 11px; color: #aaa; margin-bottom: 2px; }
+  .achieve-divider { border: none; border-top: 1px solid #e8eaf0; margin: 10px 0; }
+  .achieve-empty { color: #bbb; font-size: 13px; padding: 10px 4px; }
+  .achieve-dim-group { margin-bottom: 14px; }
+  .achieve-dim-group:last-child { margin-bottom: 0; }
+  .achieve-dim-lbl { display: inline-block; font-size: 11px; font-weight: 700; color: #1a3a6b;
+                     background: #eef4ff; border: 1px solid #c8d8f0; border-radius: 4px;
+                     padding: 2px 10px; margin-bottom: 8px; }
+  /* ── 篩選按鈕 & 浮動面板 ── */
+  /* ── 季度 Toggle 按鈕 ── */
+  .achieve-q-group { display: flex; gap: 3px; }
+  .achieve-q-btn {
+    font-size: 11px; font-weight: 600; border: 1px solid #ddd; border-radius: 4px;
+    padding: 2px 8px; color: #aaa; cursor: pointer; background: white;
+    transition: all 0.15s; user-select: none;
+  }
+  .achieve-q-btn.active { background: #1a3a6b; color: white; border-color: #1a3a6b; }
+  .achieve-q-btn:hover:not(.active) { border-color: #aac; color: #1a3a6b; }
+  .achieve-filter-wrap { position: relative; display: inline-block; }
+  .achieve-filter-btn { font-size: 12px; border: 1px solid #ddd; border-radius: 4px; padding: 3px 10px;
+                        color: #555; cursor: pointer; background: white; white-space: nowrap; }
+  .achieve-filter-btn.active { border-color: #1a3a6b; color: #1a3a6b; background: #eef4ff; font-weight: 600; }
+  .achieve-filter-panel { position: absolute; top: calc(100% + 5px); right: 0; z-index: 200;
+                          background: white; border: 1px solid #d0d7e3; border-radius: 7px;
+                          box-shadow: 0 6px 20px rgba(0,0,0,0.13); padding: 6px 0 8px;
+                          min-width: 200px; max-height: 380px; overflow-y: auto; display: none; }
+  .achieve-filter-panel.open { display: block; }
+  .achieve-filter-top { display: flex; gap: 6px; padding: 4px 12px 8px; border-bottom: 1px solid #f0f0f0; margin-bottom: 2px; }
+  .achieve-filter-top button { font-size: 11px; border: 1px solid #ddd; border-radius: 3px;
+                               padding: 2px 9px; cursor: pointer; background: white; color: #555; }
+  .achieve-filter-top button:hover { background: #f5f7ff; border-color: #aabde0; }
+  .achieve-filter-group-lbl { font-size: 10px; font-weight: 700; color: #1a3a6b; letter-spacing: 0.4px;
+                              padding: 7px 12px 2px; }
+  .achieve-filter-item { display: flex; align-items: center; gap: 7px; padding: 4px 14px; cursor: pointer; }
+  .achieve-filter-item:hover { background: #f5f7ff; }
+  .achieve-filter-item input[type=checkbox] { cursor: pointer; accent-color: #1a3a6b; }
+  .achieve-filter-item label { font-size: 12px; color: #333; cursor: pointer; }
+  .achieve-filter-sep { border: none; border-top: 1px solid #f0f0f0; margin: 5px 0 2px; }
+  /* ── 卡片內 Order 列 ── */
+  .achieve-order-row { display: flex; justify-content: space-between; align-items: center;
+                       margin-bottom: 10px; padding: 5px 9px; background: #eef2f8;
+                       border-radius: 5px; border: 1px solid #dce6f0; }
+  .achieve-order-lbl { font-size: 11px; color: #667; font-weight: 600; }
+  .achieve-order-val { font-size: 12px; font-weight: 700; color: #1a3a6b; }
+
+  /* ── Bar chart ── */
+  .bar-wrap { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 18px; margin-bottom: 18px; }
+  .bar-title { font-size: 14px; font-weight: 700; color: #444; margin-bottom: 14px; }
+  .bar-row { display: flex; align-items: center; margin-bottom: 8px; }
+  .bar-bu-label { width: 80px; font-size: 12px; font-weight: 600; color: #555; flex-shrink: 0; }
+  .bar-container-wrap { flex: 1; position: relative; }
+  .bar-container { width: 100%; height: 24px; background: #f0f0f0; border-radius: 4px; overflow: hidden; display: flex; }
+  .bar-seg { height: 100%; display: flex; align-items: center; justify-content: center;
+             font-size: 10px; color: white; font-weight: 600; overflow: hidden; min-width: 0; }
+  .bar-seg.max  { background: #00897B; }
+  .bar-seg.base { background: #4CAF50; }
+  .bar-seg.acp  { background: #2196F3; }
+  .bar-seg.fix  { background: #FF9800; }
+  .bar-seg.opt  { background: #9C27B0; }
+  .bar-total { width: 120px; text-align: right; font-size: 12px; color: #555; padding-left: 10px; flex-shrink: 0; }
+  /* Quota tick */
+  .bar-quota-tick {
+    position: absolute; top: -4px; bottom: -4px; width: 2px;
+    border-radius: 1px; z-index: 10; pointer-events: none;
+  }
+  .bar-quota-tick::before {
+    content: ''; position: absolute; top: 0; left: 50%;
+    transform: translateX(-50%);
+    border-left: 3px solid transparent; border-right: 3px solid transparent;
+    border-top: 5px solid currentColor;
+  }
+  .bar-quota-arrow {
+    position: absolute; right: -16px; top: 50%; transform: translateY(-50%);
+    font-size: 10px; font-weight: 700; line-height: 1;
+  }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #555; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+
+  /* ── Table ── */
+  .table-wrap { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; margin-bottom: 20px; }
+  .table-title { padding: 12px 18px; font-size: 14px; font-weight: 700; background: #f8f9fa;
+                 border-bottom: 1px solid #e9ecef; color: #444; display: flex; align-items: center; justify-content: space-between; }
+  .table-title span.result-count { font-size: 12px; font-weight: 400; color: #888; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #1a3a6b; color: white; padding: 9px 10px; text-align: center; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  th.left { text-align: left; }
+
+  tr.bu-row { background: #e8eef7; cursor: pointer; }
+  tr.bu-row:hover { background: #d5e3f5; }
+  tr.bu-row td { padding: 9px 10px; font-weight: 700; font-size: 13px; border-bottom: 2px solid #c5d5ea; }
+
+  tr.case-row { background: white; display: none; }
+  tr.case-row:hover { background: #f5f9ff; }
+  tr.case-row td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+  tr.case-row.vis { display: table-row; }
+  tr.case-row.search-hide { display: none !important; }
+
+  tr.item-row { background: #fafcff; display: none; }
+  tr.item-row td { padding: 5px 10px 5px 34px; border-bottom: 1px solid #f5f5f5; font-size: 11px; color: #555; }
+  tr.item-row.vis { display: table-row; }
+  tr.item-row.search-hide { display: none !important; }
+
+  tr.sub-row { background: #edf2fb; display: none; }
+  tr.sub-row td { padding: 7px 10px; font-weight: 700; font-size: 12px; border-bottom: 2px solid #c5d5ea; color: #1a3a6b; }
+  tr.sub-row.vis { display: table-row; }
+
+  tr.grand-row td { padding: 10px 10px; font-weight: 700; color: white; font-size: 13px;
+                    background: #1a3a6b; border-top: 2px solid #0d2447; }
+
+  /* ── Rep summary table (Table 2) ── */
+  tr.rep2-row { background: #e6f0e8; cursor: pointer; }
+  tr.rep2-row:hover { background: #d5e9d8; }
+  tr.rep2-row td { padding: 9px 10px; font-weight: 700; font-size: 13px; border-bottom: 2px solid #b5d5bb; }
+  tr.case2-row { background: white; display: none; }
+  tr.case2-row:hover { background: #f5fef6; }
+  tr.case2-row td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+  tr.case2-row.vis { display: table-row; }
+  tr.item2-row { background: #fafffe; display: none; }
+  tr.item2-row td { padding: 5px 10px; border-bottom: 1px solid #f5f5f5; font-size: 11px; color: #555; }
+  tr.item2-row.vis { display: table-row; }
+  .xbtn-g { display: inline-block; width: 17px; height: 17px; line-height: 17px; text-align: center;
+             background: #3a7d44; color: white; border-radius: 3px; font-size: 11px;
+             margin-right: 7px; cursor: pointer; flex-shrink: 0; user-select: none; }
+  tr.bu-row.bu-hidden, tr.sub-row.bu-hidden,
+  tr.conf-group-row.bu-hidden, tr.rep-group-row.bu-hidden { display: none !important; }
+
+  /* Conf group rows (Level 2: under BU) */
+  tr.conf-group-row { background: #f0f5fc; display: none; cursor: pointer; }
+  tr.conf-group-row:hover { background: #e4edf9; }
+  tr.conf-group-row td { padding: 7px 10px; font-weight: 700; font-size: 12px; border-bottom: 1px solid #cfdaea; }
+  tr.conf-group-row td:first-child { border-left: 4px solid #2d5ea8; }
+  tr.conf-group-row.vis { display: table-row; }
+
+  /* Rep group rows (Level 3: under Conf group) */
+  tr.rep-group-row { background: #f8fafd; display: none; cursor: pointer; }
+  tr.rep-group-row:hover { background: #edf3fe; }
+  tr.rep-group-row td { padding: 6px 10px; font-weight: 600; font-size: 12px; border-bottom: 1px solid #e8eff8; color: #334; }
+  tr.rep-group-row.vis { display: table-row; }
+
+  .conf-group-lbl { display: flex; align-items: center; padding-left: 18px; }
+  .rep-group-lbl  { display: flex; align-items: center; padding-left: 36px; }
+  .xbtn3 { display: inline-block; width: 14px; height: 14px; line-height: 14px; text-align: center;
+            background: #5c8dc7; color: white; border-radius: 2px; font-size: 10px;
+            margin-right: 6px; cursor: pointer; user-select: none; flex-shrink: 0; }
+
+  td.num  { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.dim  { text-align: right; color: #ccc; }
+
+  .tag { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; margin-left: 5px; }
+  .tag-max  { background: #E0F2F1; color: #00695C; }
+  .tag-base { background: #E8F5E9; color: #2E7D32; }
+  .tag-acp  { background: #E3F2FD; color: #1565C0; }
+  .tag-fix  { background: #FFF3E0; color: #E65100; }
+  .tag-opt  { background: #F3E5F5; color: #6A1B9A; }
+
+  .xbtn  { display: inline-block; width: 17px; height: 17px; line-height: 17px; text-align: center;
+            background: #2d5ea8; color: white; border-radius: 3px; font-size: 11px;
+            margin-right: 7px; cursor: pointer; flex-shrink: 0; user-select: none; }
+  .xbtn2 { display: inline-block; width: 13px; height: 13px; line-height: 13px; text-align: center;
+            background: #7aabdf; color: white; border-radius: 2px; font-size: 10px;
+            margin-right: 5px; cursor: pointer; user-select: none; }
+  .bu-lbl   { display: flex; align-items: center; }
+  .case-lbl { display: flex; align-items: center; padding-left: 18px; }
+  .rep-tag  { font-size: 11px; color: #888; margin-left: 5px; }
+  .date-tag { font-size: 11px; color: #888; }
+
+  .conf-max  { color: #00695C; }
+  .conf-base { color: #2E7D32; }
+  .conf-acp  { color: #1565C0; }
+  .conf-fix  { color: #E65100; }
+  .conf-opt  { color: #6A1B9A; }
+
+  tr.hidden-conf { display: none !important; }
+
+  /* ── Loading overlay ── */
+  .loading-overlay { position: fixed; inset: 0; background: rgba(26,58,107,0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+  .loading-box { background: white; border-radius: 10px; padding: 32px 48px; text-align: center; }
+  .loading-box p { font-size: 15px; color: #444; margin-top: 12px; }
+  .spinner { width: 40px; height: 40px; border: 4px solid #eee; border-top: 4px solid #2d5ea8; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .no-data { padding: 40px; text-align: center; color: #aaa; font-size: 14px; }
+
+  /* ── History sidebar ── */
+  .hist-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:1000;display:none; }
+  .hist-overlay.open { display:block; }
+  .hist-sidebar { position:fixed;top:0;right:-420px;width:420px;height:100vh;background:white;
+                  box-shadow:-4px 0 24px rgba(0,0,0,0.18);z-index:1001;display:flex;flex-direction:column;
+                  transition:right .28s cubic-bezier(.4,0,.2,1); }
+  .hist-sidebar.open { right:0; }
+  .hist-header { background:#1a3a6b;color:white;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0; }
+  .hist-header h3 { font-size:15px;font-weight:700;margin:0; }
+  .hist-close { background:none;border:none;color:white;font-size:20px;cursor:pointer;line-height:1;padding:2px 4px; }
+  .hist-close:hover { color:#aac8ff; }
+  .hist-body { flex:1;overflow-y:auto;padding:12px; }
+  .hist-empty { padding:40px;text-align:center;color:#bbb;font-size:13px; }
+  .hist-card { background:#f8f9fb;border:1px solid #e0e8f4;border-radius:8px;padding:12px 14px;margin-bottom:10px;
+               cursor:pointer;transition:border-color .15s; }
+  .hist-card:hover { border-color:#2d5ea8;background:#f0f5ff; }
+  .hist-card.compare-sel { border-color:#FF9800;background:#fff8f0; }
+  .hist-card-top { display:flex;align-items:center;justify-content:space-between;margin-bottom:4px; }
+  .hist-date { font-size:11px;color:#888; }
+  .hist-filename { font-size:12px;font-weight:700;color:#1a3a6b;margin-bottom:2px; }
+  .hist-meta { font-size:11px;color:#888;margin-bottom:6px; }
+  .hist-conf-bar { display:flex;height:6px;border-radius:3px;overflow:hidden;margin-bottom:8px;background:#eee; }
+  .hist-actions { display:flex;gap:6px; }
+  .hbtn { padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid; }
+  .hbtn-load   { border-color:#2d5ea8;color:#2d5ea8;background:white; }
+  .hbtn-load:hover   { background:#2d5ea8;color:white; }
+  .hbtn-cmp    { border-color:#FF9800;color:#E65100;background:white; }
+  .hbtn-cmp:hover    { background:#FF9800;color:white; }
+  .hbtn-cmp.active   { background:#FF9800;color:white; }
+  .hbtn-del    { border-color:#ddd;color:#999;background:white; }
+  .hbtn-del:hover    { border-color:#e53935;color:#e53935; }
+  .hist-compare-bar { background:#fff3e0;border-top:1px solid #ffe0b2;padding:10px 14px;display:none;flex-shrink:0; }
+  .hist-compare-bar.vis { display:block; }
+  .hist-compare-info { font-size:12px;color:#E65100;font-weight:600;margin-bottom:6px; }
+  .hist-compare-go { width:100%;padding:7px;background:#1a3a6b;color:white;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer; }
+  .hist-compare-go:hover { background:#2d5ea8; }
+
+  /* ── Comparison modal ── */
+  .cmp-modal { position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px; }
+  .cmp-modal.open { display:flex; }
+  .cmp-box { background:white;border-radius:12px;width:100%;max-width:1100px;box-shadow:0 20px 60px rgba(0,0,0,0.3);flex-shrink:0; }
+  .cmp-header { background:#1a3a6b;color:white;padding:16px 22px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between; }
+  .cmp-header h2 { font-size:16px;margin:0; }
+  .cmp-close { background:none;border:none;color:white;font-size:22px;cursor:pointer; }
+  .cmp-close:hover { color:#aac8ff; }
+  .cmp-vs { display:flex;gap:12px;padding:16px 22px;background:#f0f5ff;border-bottom:1px solid #dce8f8; }
+  .cmp-vs-card { flex:1;background:white;border:1px solid #c8d8ee;border-radius:8px;padding:10px 14px; }
+  .cmp-vs-label { font-size:11px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px; }
+  .cmp-vs-name { font-size:13px;font-weight:700;color:#1a3a6b;margin-top:2px; }
+  .cmp-vs-meta { font-size:11px;color:#888; }
+  .cmp-body { padding:18px 22px; }
+  .cmp-section { margin-bottom:22px; }
+  .cmp-section-title { font-size:14px;font-weight:700;color:#444;border-bottom:2px solid #e0e8f4;padding-bottom:6px;margin-bottom:12px; }
+  .cmp-conf-grid { display:flex;gap:10px;flex-wrap:wrap; }
+  .cmp-conf-card { flex:1;min-width:130px;background:#f8f9fb;border-radius:8px;padding:10px 14px;border-top:3px solid; }
+  .cmp-conf-name { font-size:11px;color:#888;font-weight:600;margin-bottom:4px; }
+  .cmp-conf-vals { font-size:11px;color:#555; }
+  .cmp-conf-delta { font-size:16px;font-weight:700;margin-top:4px; }
+  .delta-pos { color:#2e7d32; }
+  .delta-neg { color:#c62828; }
+  .delta-zero { color:#888; }
+  .cmp-tabs { display:flex;gap:0;border-bottom:2px solid #e0e8f4;margin-bottom:14px; }
+  .cmp-tab { padding:7px 18px;font-size:12px;font-weight:600;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-2px; }
+  .cmp-tab.active { color:#1a3a6b;border-color:#1a3a6b; }
+  .cmp-tab:hover { color:#2d5ea8; }
+  .cmp-tab-content { display:none; }
+  .cmp-tab-content.active { display:block; }
+  .cmp-table { width:100%;border-collapse:collapse;font-size:12px; }
+  .cmp-table th { background:#1a3a6b;color:white;padding:7px 10px;text-align:left;font-size:11px; }
+  .cmp-table th.r { text-align:right; }
+  .cmp-table td { padding:6px 10px;border-bottom:1px solid #f0f0f0; }
+  .cmp-table td.r { text-align:right;font-variant-numeric:tabular-nums; }
+  .cmp-table tr:hover td { background:#f5f9ff; }
+  .tag-new { background:#e8f5e9;color:#2e7d32;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700; }
+  .tag-del { background:#ffebee;color:#c62828;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700; }
+  .tag-chg { background:#fff3e0;color:#e65100;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700; }
+
+  /* ── Changed-case block (new 4-col design) ── */
+  .cmp-case-block { border:1px solid #e0e8f4;border-radius:8px;margin-bottom:12px;overflow:hidden; }
+  .cmp-case-header { display:flex;align-items:center;justify-content:space-between;
+                     background:#f4f7fc;padding:9px 14px;border-bottom:1px solid #e0e8f4; }
+  .cmp-case-meta { display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0; }
+  .cmp-case-bu   { background:#1a3a6b;color:white;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:700;flex-shrink:0; }
+  .cmp-case-cust { font-size:12px;font-weight:700;color:#333; }
+  .cmp-case-name { font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px; }
+  .cmp-case-rep  { font-size:11px;color:#999;flex-shrink:0; }
+  .cmp-case-delta { font-size:15px;font-weight:700;flex-shrink:0;padding-left:12px; }
+  .cmp-det-table { width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed; }
+  .cmp-det-table col.c1 { width:20%; }
+  .cmp-det-table col.c2 { width:30%; }
+  .cmp-det-table col.c3 { width:30%; }
+  .cmp-det-table col.c4 { width:20%; }
+  .cmp-det-table th { background:#eef2fa;color:#555;padding:7px 14px;text-align:left;font-size:11px;font-weight:700;border-bottom:1px solid #dce8f8; }
+  .cmp-det-table th:nth-child(2),.cmp-det-table th:nth-child(3) { text-align:center; }
+  .cmp-det-table th.r { text-align:right; }
+  .cmp-det-row td { padding:8px 14px;border-bottom:1px solid #f5f5f5;vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+  .cmp-det-row td:nth-child(2),.cmp-det-row td:nth-child(3) { text-align:center; }
+  .cmp-det-row td.r { text-align:right;font-variant-numeric:tabular-nums; }
+  .cmp-det-row:last-child td { border-bottom:none; }
+  .cmp-det-row:hover td { background:#fafcff; }
+  .conf-pill { display:inline-block;padding:1px 7px;border-radius:8px;font-size:10px;font-weight:700; }
+
+  /* ── Trend chart ── */
+  .trend-wrap { background:#fafcff;border:1px solid #e0e8f4;border-radius:8px;padding:14px;margin-bottom:14px; }
+  .trend-title { font-size:12px;font-weight:700;color:#555;margin-bottom:10px; }
+  .trend-svg-wrap { overflow-x:auto; }
+
+  /* ── Settings modal ── */
+  .stt-modal { position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:2000;display:none;align-items:center;justify-content:center; }
+  .stt-modal.open { display:flex; }
+  .stt-box { background:white;border-radius:10px;width:340px;box-shadow:0 12px 40px rgba(0,0,0,0.22); }
+  .stt-header { background:#1a3a6b;color:white;padding:14px 18px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center; }
+  .stt-header h3 { margin:0;font-size:15px; }
+  .stt-close { background:none;border:none;color:white;font-size:20px;cursor:pointer; }
+  .stt-body { padding:20px 18px; }
+  .stt-row { margin-bottom:16px; }
+  .stt-label { font-size:12px;font-weight:700;color:#555;margin-bottom:6px;display:block; }
+  .stt-input { border:1px solid #ccd6e8;border-radius:5px;padding:7px 10px;width:100%;font-size:13px;outline:none; }
+  .stt-input:focus { border-color:#2d5ea8; }
+  .stt-hint { font-size:11px;color:#aaa;margin-top:4px; }
+  .stt-save { width:100%;padding:9px;background:#1a3a6b;color:white;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px; }
+  .stt-save:hover { background:#2d5ea8; }
+
+  /* ── Toast notification ── */
+  .toast { position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#333;color:white;
+           padding:10px 22px;border-radius:24px;font-size:13px;font-weight:600;z-index:9999;
+           transition:transform .3s,opacity .3s;opacity:0;pointer-events:none; }
+  .toast.show { transform:translateX(-50%) translateY(0);opacity:1; }
+
+  /* ── Header history/settings buttons ── */
+  .header-btns { display:flex;gap:8px;align-items:center; }
+  .hist-btn  { background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.4);color:white;
+               padding:7px 14px;border-radius:5px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:background .2s; }
+  .hist-btn:hover { background:rgba(255,255,255,0.28); }
+  .hist-badge { display:inline-block;background:#FF9800;color:white;border-radius:10px;font-size:10px;
+                font-weight:700;padding:0 6px;margin-left:4px;vertical-align:middle; }
+
+  /* ── Upload modal (lightweight overlay for uploading within app) ── */
+  .upl-modal { position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;display:none;align-items:center;justify-content:center; }
+  .upl-modal.open { display:flex; }
+  .upl-box { background:white;border-radius:12px;width:440px;max-width:95vw;box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+  .upl-header { background:#1a3a6b;color:white;padding:14px 18px;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:space-between; }
+  .upl-header h3 { margin:0;font-size:15px; }
+  .upl-m-close { background:none;border:none;color:white;font-size:20px;cursor:pointer;line-height:1; }
+  .upl-m-close:hover { color:#aac8ff; }
+  .upl-body { padding:22px; }
+  .upl-drop-zone { border:2px dashed #c0d0e8;border-radius:10px;padding:28px 20px;cursor:pointer;
+                   transition:all .2s;text-align:center;margin-bottom:14px; }
+  .upl-drop-zone:hover,.upl-drop-zone.dragover { border-color:#2d5ea8;background:#eef4ff; }
+  .upl-drop-zone .icon { font-size:32px;margin-bottom:8px; }
+  .upl-drop-zone p { font-size:13px;color:#555;margin-bottom:3px; }
+  .upl-drop-zone .hint { font-size:11px;color:#aaa; }
+  .upl-select-btn { display:block;width:100%;background:#1a3a6b;color:white;padding:10px;border:none;
+                    border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px;text-align:center; }
+  .upl-select-btn:hover { background:#2d5ea8; }
+  .upl-cancel-btn { display:block;width:100%;padding:8px;border:1px solid #ddd;border-radius:6px;
+                    font-size:13px;background:white;cursor:pointer;color:#666; }
+  .upl-cancel-btn:hover { background:#f5f5f5; }
+  .upl-modal-err { color:#c62828;font-size:12px;margin-top:8px;display:none; }
+
+  /* ── Section wrap (collapsible) ── */
+  .section-wrap { background:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.08); overflow:hidden; }
+  .section-header { display:flex; align-items:center; justify-content:space-between; padding:12px 18px;
+                    border-bottom:1px solid #e8eff8; background:#f8fafd; }
+  .section-body { overflow:hidden; transition:max-height 0.3s ease; }
+  .section-body.collapsed { max-height:0 !important; }
+  .collapse-btn { padding:4px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:600;
+                  border:1px solid #c0d0e8; background:white; color:#2d5ea8; white-space:nowrap; }
+  .collapse-btn:hover { background:#eef4ff; }
+
+  /* ── Dim tabs ── */
+  .dim-tabs { display:flex; gap:4px; }
+  .dim-tab { padding:5px 14px; border-radius:5px; border:1px solid #c0d0e8; background:white;
+             color:#666; font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; }
+  .dim-tab.active { background:#1a3a6b; color:white; border-color:#1a3a6b; }
+  .dim-tab:hover:not(.active) { background:#eef4ff; color:#1a3a6b; }
+
+  /* ── Management Modals (Quota / Order) ── */
+  .mgmt-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; }
+  .mgmt-modal.open { display:flex; }
+  .mgmt-box { background:white; border-radius:12px; width:680px; max-width:95vw; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+  .mgmt-header { background:#1a3a6b; color:white; padding:14px 18px; border-radius:12px 12px 0 0; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+  .mgmt-header h3 { font-size:15px; font-weight:700; margin:0; }
+  .mgmt-close { background:none; border:none; color:white; font-size:20px; cursor:pointer; line-height:1; padding:2px 6px; }
+  .mgmt-close:hover { color:#aac8ff; }
+  .mgmt-year-sel { background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); color:white; border-radius:4px; padding:4px 8px; font-size:12px; cursor:pointer; }
+  .mgmt-tabs { display:flex; gap:0; border-bottom:2px solid #e8eff8; background:#f8fafd; flex-shrink:0; }
+  .mgmt-tab { padding:10px 18px; border:none; background:none; font-size:12px; font-weight:600; color:#666; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .15s; }
+  .mgmt-tab.active { color:#1a3a6b; border-bottom-color:#1a3a6b; background:white; }
+  .mgmt-tab:hover:not(.active) { background:#eef4ff; color:#1a3a6b; }
+  .mgmt-body { padding:16px; overflow-y:auto; flex:1; }
+  .mgmt-add-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; }
+  .mgmt-input { border:1px solid #d0d8e8; border-radius:5px; padding:7px 10px; font-size:12px; outline:none; }
+  .mgmt-input:focus { border-color:#2d5ea8; }
+  .mgmt-add-btn { padding:7px 14px; background:#1a3a6b; color:white; border:none; border-radius:5px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
+  .mgmt-add-btn:hover { background:#2d5ea8; }
+  .mgmt-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .mgmt-table th { background:#f0f5fc; padding:8px 10px; text-align:left; border-bottom:2px solid #dde8f8; font-weight:700; color:#444; }
+  .mgmt-table td { padding:7px 10px; border-bottom:1px solid #eef2f8; }
+  .mgmt-table tr:hover td { background:#fafcff; }
+  .mgmt-table td:nth-child(2) { text-align:right; font-variant-numeric:tabular-nums; }
+  .mgmt-act-btn { padding:3px 8px; border-radius:3px; font-size:11px; font-weight:600; cursor:pointer; border:1px solid; margin-left:4px; }
+  .mgmt-edit-btn { border-color:#2196F3; color:#2196F3; background:white; }
+  .mgmt-edit-btn:hover { background:#e3f2fd; }
+  .mgmt-del-btn  { border-color:#f44336; color:#f44336; background:white; }
+  .mgmt-del-btn:hover  { background:#ffebee; }
+</style>
+</head>
+<body>
+
+<!-- ── Upload Screen ── -->
+<div class="upload-wrap" id="upload-screen">
+  <div class="upload-box">
+    <h1>📊 銷售案 Forecast 分析系統</h1>
+    <p class="sub">上傳 BU 銷售案清單，自動產生 Forecast 彙整分析</p>
+
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <div class="icon">📂</div>
+      <p>拖曳檔案至此，或點擊選擇</p>
+      <p class="hint">支援 .xls / .xlsx 格式</p>
+    </div>
+    <input type="file" id="file-input" accept=".xls,.xlsx">
+    <label class="upload-btn" for="file-input">選擇檔案</label>
+    <p class="format-note">檔案格式：銷售案清單標準匯出格式（含「顧客代號」、「客戶名稱」、「銷售案名稱」等欄位）</p>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+</div>
+
+<!-- ── Loading Overlay ── -->
+<div class="loading-overlay" id="loading" style="display:none">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <p>解析資料中，請稍候…</p>
+  </div>
+</div>
+
+<!-- ── Main App ── -->
+<div id="app" style="display:none">
+  <div class="header">
+    <div class="header-left">
+      <h1 id="app-title">銷售案 Forecast 彙整</h1>
+      <div class="subtitle" id="app-subtitle"></div>
+    </div>
+    <div class="header-btns">
+      <button class="hist-btn" id="hist-btn" onclick="openHistory()" style="display:none">
+        📋 歷史記錄<span class="hist-badge" id="hist-badge" style="display:none"></span>
+      </button>
+      <button class="hist-btn" id="stt-btn" onclick="openSettings()" style="display:none">⚙️ 設定</button>
+      <button class="hist-btn" id="quota-btn" onclick="openQuota()" style="display:none">🎯 Quota</button>
+      <button class="hist-btn" id="order-btn" onclick="openOrder()" style="display:none">📦 訂單</button>
+      <button class="reload-btn" onclick="openUploadModal()">📤 上傳新資料</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="summary-cards" id="cards"></div>
+
+    <div class="ctrl-bar">
+      <span class="filter-label">📊 信心度：</span>
+      <div class="filter-checks" id="filters"></div>
+      <button class="filter-btn filter-btn-all"  onclick="selAll(true)">全選</button>
+      <button class="filter-btn filter-btn-none" onclick="selAll(false)">全消</button>
+      <div class="search-wrap">
+        <input class="search-input" id="search-input" type="text" placeholder="🔍 搜尋客戶 / 銷售案名稱…" oninput="onSearch()">
+        <span class="search-clear" onclick="clearSearch()" title="清除">✕</span>
+      </div>
+    </div>
+    <div class="ctrl-bar">
+      <span class="filter-label">📅 季度：</span>
+      <div class="multi-select">
+        <div class="ms-trigger" id="quarter-trigger" onclick="toggleMsPanel('quarter')">
+          <span class="ms-label">全選</span>
+        </div>
+        <div class="ms-panel" id="quarter-panel">
+          <div class="ms-panel-head">
+            <a onclick="msAll('quarter')">全選</a>
+            <a onclick="msNone('quarter')">全消</a>
+          </div>
+        </div>
+      </div>
+      <span class="filter-label" style="margin-left:8px">👤 業務：</span>
+      <div class="multi-select">
+        <div class="ms-trigger" id="sales-trigger" onclick="toggleMsPanel('sales')">
+          <span class="ms-label">全選</span>
+        </div>
+        <div class="ms-panel" id="sales-panel">
+          <div class="ms-panel-head">
+            <a onclick="msAll('sales')">全選</a>
+            <a onclick="msNone('sales')">全消</a>
+          </div>
+        </div>
+      </div>
+      <span class="filter-label" style="margin-left:8px">🏢 支援BU：</span>
+      <div class="multi-select">
+        <div class="ms-trigger" id="sbu-trigger" onclick="toggleMsPanel('sbu')">
+          <span class="ms-label">全選</span>
+        </div>
+        <div class="ms-panel" id="sbu-panel">
+          <div class="ms-panel-head">
+            <a onclick="msAll('sbu')">全選</a>
+            <a onclick="msNone('sbu')">全消</a>
+          </div>
+        </div>
+      </div>
+      <button class="filter-btn filter-btn-none" style="margin-left:auto" onclick="clearAllFilters()">清除篩選</button>
+    </div>
+
+    <!-- 達成率 Section -->
+    <div class="achieve-wrap" id="achieve-wrap">
+      <div class="achieve-hd">
+        <span class="achieve-hd-title">🎯 年度達成率</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <select class="achieve-year-sel" id="achieve-year-sel" onchange="buildAchieveSection()">
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+          </select>
+          <div class="achieve-q-group" id="achieve-q-group">
+            <button class="achieve-q-btn active" data-q="1" onclick="toggleAchieveQuarter(1)">Q1</button>
+            <button class="achieve-q-btn active" data-q="2" onclick="toggleAchieveQuarter(2)">Q2</button>
+            <button class="achieve-q-btn active" data-q="3" onclick="toggleAchieveQuarter(3)">Q3</button>
+            <button class="achieve-q-btn active" data-q="4" onclick="toggleAchieveQuarter(4)">Q4</button>
+          </div>
+          <div class="achieve-filter-wrap" id="achieve-filter-wrap">
+            <button class="achieve-filter-btn" id="achieve-filter-btn" onclick="toggleAchieveFilter(event)">🔽 篩選</button>
+            <div class="achieve-filter-panel" id="achieve-filter-panel"></div>
+          </div>
+          <button class="collapse-btn" id="collapse-achieve-btn" onclick="toggleSection('achieve')">▲ 收合</button>
+        </div>
+      </div>
+      <div class="section-body" id="section-achieve-body">
+        <div id="achieve-cards">
+          <div class="achieve-empty">載入中…</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bar-wrap">
+      <div class="bar-title">各業務BU 銷售金額結構（未稅，依結案信心度堆疊）</div>
+      <div class="legend" id="legend"></div>
+      <div id="bar"></div>
+    </div>
+
+    <!-- Table section with collapse + tabs -->
+    <div class="section-wrap" id="section-main">
+      <div class="section-header">
+        <div class="dim-tabs">
+          <button class="dim-tab active" id="dim-tab-bu"       onclick="switchDimTab('bu')">業務BU維度</button>
+          <button class="dim-tab"        id="dim-tab-dept"     onclick="switchDimTab('dept')">業務部門維度</button>
+          <button class="dim-tab"        id="dim-tab-sbu"      onclick="switchDimTab('sbu')">支援BU維度</button>
+          <button class="dim-tab"        id="dim-tab-sdept"    onclick="switchDimTab('sdept')">支援部門維度</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="filter-btn filter-btn-all" id="expand-rep-btn" onclick="toggleAllReps()" style="white-space:nowrap">＋ 展開全部業務</button>
+          <span class="result-count" id="result-count"></span>
+          <button class="collapse-btn" id="collapse-main-btn" onclick="toggleSection('main')">▲ 收合</button>
+        </div>
+      </div>
+      <div class="section-body" id="section-main-body">
+        <div id="dim-bu">
+          <div class="table-title">加總 - 分項預計銷售金額（未稅）｜業務BU ▶ 信心度群組 ▶ 業務群組 ▶ 銷售案明細</div>
+          <table>
+            <thead><tr id="thead-row"></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+        <div id="dim-dept" style="display:none">
+          <div class="table-title">加總 - 分項預計銷售金額（未稅）｜業務部門 ▶ 信心度群組 ▶ 業務群組 ▶ 銷售案明細</div>
+          <table>
+            <thead><tr id="thead-row-dept"></tr></thead>
+            <tbody id="tbody-dept"></tbody>
+          </table>
+        </div>
+        <div id="dim-sbu" style="display:none">
+          <div class="table-title">加總 - 分項預計銷售金額（未稅）｜支援BU ▶ 信心度群組 ▶ 業務群組 ▶ 銷售案明細（依支援BU分項加總）</div>
+          <table>
+            <thead><tr id="thead-row-sbu"></tr></thead>
+            <tbody id="tbody-sbu"></tbody>
+          </table>
+        </div>
+        <div id="dim-sdept" style="display:none">
+          <div class="table-title">加總 - 分項預計銷售金額（未稅）｜支援部門 ▶ 信心度群組 ▶ 業務群組 ▶ 銷售案明細（依支援部門分項加總）</div>
+          <table>
+            <thead><tr id="thead-row-sdept"></tr></thead>
+            <tbody id="tbody-sdept"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-wrap" id="section-rep" style="margin-top:24px">
+      <div class="section-header">
+        <span style="font-weight:700;font-size:13px">📋 業務別銷售案匯總｜各業務跨 BU 信心度統計</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span class="result-count" id="rep-result-count"></span>
+          <button class="collapse-btn" id="collapse-rep-btn" onclick="toggleSection('rep')">▲ 收合</button>
+        </div>
+      </div>
+      <div class="section-body" id="section-rep-body">
+        <table>
+          <thead><tr id="thead-row2"></tr></thead>
+          <tbody id="tbody2"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── History Sidebar ── -->
+<div class="hist-overlay" id="hist-overlay" onclick="closeHistory()"></div>
+<div class="hist-sidebar" id="hist-sidebar">
+  <div class="hist-header">
+    <h3>📋 歷史記錄</h3>
+    <button class="hist-close" onclick="closeHistory()">✕</button>
+  </div>
+  <div class="hist-body" id="hist-body">
+    <div class="hist-empty">尚無歷史記錄</div>
+  </div>
+  <div class="hist-compare-bar" id="hist-compare-bar">
+    <div class="hist-compare-info" id="hist-compare-info">已選 0 / 2 筆，請再選一筆進行比較</div>
+    <button class="hist-compare-go" id="hist-compare-go" onclick="runCompare()" disabled>開始比較</button>
+  </div>
+</div>
+
+<!-- ── Comparison Modal ── -->
+<div class="cmp-modal" id="cmp-modal">
+  <div class="cmp-box">
+    <div class="cmp-header">
+      <h2>📊 歷史資料比較</h2>
+      <button class="cmp-close" onclick="closeCompare()">✕</button>
+    </div>
+    <div class="cmp-vs" id="cmp-vs"></div>
+    <div class="cmp-body">
+      <div class="cmp-section">
+        <div class="cmp-section-title">各信心度金額變化</div>
+        <div class="cmp-conf-grid" id="cmp-conf-grid"></div>
+      </div>
+      <div class="cmp-section">
+        <div class="cmp-section-title">趨勢走勢（近期各次上傳）</div>
+        <div class="trend-wrap"><div class="trend-title">各信心度累計金額（M）</div><div class="trend-svg-wrap" id="trend-svg"></div></div>
+      </div>
+      <div class="cmp-section">
+        <div class="cmp-tabs">
+          <div class="cmp-tab active" onclick="cmpTab(0)">新增銷售案 <span id="tab-new-cnt"></span></div>
+          <div class="cmp-tab" onclick="cmpTab(1)">移除銷售案 <span id="tab-del-cnt"></span></div>
+          <div class="cmp-tab" onclick="cmpTab(2)">案件異動明細 <span id="tab-chg-cnt"></span></div>
+        </div>
+        <div class="cmp-tab-content active" id="cmp-tab-0"></div>
+        <div class="cmp-tab-content" id="cmp-tab-1"></div>
+        <div class="cmp-tab-content" id="cmp-tab-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Settings Modal ── -->
+<div class="stt-modal" id="stt-modal">
+  <div class="stt-box">
+    <div class="stt-header">
+      <h3>⚙️ 系統設定</h3>
+      <button class="stt-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="stt-body">
+      <div class="stt-row">
+        <label class="stt-label">最大保留歷史記錄筆數</label>
+        <input class="stt-input" type="number" id="stt-max-history" min="1" max="100" value="12">
+        <div class="stt-hint">每次上傳後，若超過此數量將自動刪除最舊的記錄（預設：12）</div>
+      </div>
+      <button class="stt-save" onclick="saveSettings()">儲存設定</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Quota Modal ── -->
+<div class="mgmt-modal" id="quota-modal">
+  <div class="mgmt-box">
+    <div class="mgmt-header">
+      <h3>🎯 Quota 設定管理</h3>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:12px;color:#ccc">年度</label>
+        <select id="quota-year-sel" class="mgmt-year-sel" onchange="loadQuotas()"></select>
+        <button class="mgmt-close" onclick="closeQuota()">✕</button>
+      </div>
+    </div>
+    <div class="mgmt-tabs">
+      <button class="mgmt-tab active" onclick="quotaTab('sales_bu')">業務BU</button>
+      <button class="mgmt-tab" onclick="quotaTab('sales_dept')">業務部門</button>
+      <button class="mgmt-tab" onclick="quotaTab('support_bu')">支援BU</button>
+      <button class="mgmt-tab" onclick="quotaTab('support_dept')">支援部門</button>
+    </div>
+    <div class="mgmt-body">
+      <div class="mgmt-add-row">
+        <input id="quota-name-input" class="mgmt-input" placeholder="名稱（如 SSDBU）" style="flex:2">
+        <input id="quota-amt-input"  class="mgmt-input" placeholder="Quota 金額" type="number" style="flex:2">
+        <button class="mgmt-add-btn" onclick="addQuota()">＋ 新增</button>
+      </div>
+      <table class="mgmt-table">
+        <thead><tr><th style="width:30%">維度名稱</th><th style="width:35%">Quota 金額</th><th style="width:20%">更新時間</th><th style="width:15%">操作</th></tr></thead>
+        <tbody id="quota-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Order Modal ── -->
+<div class="mgmt-modal" id="order-modal">
+  <div class="mgmt-box">
+    <div class="mgmt-header">
+      <h3>📦 訂單 Order 記錄管理</h3>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:12px;color:#ccc">年度</label>
+        <select id="order-year-sel" class="mgmt-year-sel" onchange="loadOrders()"></select>
+        <button class="mgmt-close" onclick="closeOrder()">✕</button>
+      </div>
+    </div>
+    <div class="mgmt-tabs">
+      <button class="mgmt-tab active" onclick="orderTab('sales_bu')">業務BU</button>
+      <button class="mgmt-tab" onclick="orderTab('sales_dept')">業務部門</button>
+      <button class="mgmt-tab" onclick="orderTab('support_bu')">支援BU</button>
+      <button class="mgmt-tab" onclick="orderTab('support_dept')">支援部門</button>
+    </div>
+    <div class="mgmt-body">
+      <div class="mgmt-add-row">
+        <input id="order-name-input" class="mgmt-input" placeholder="名稱（如 SSDBU）" style="flex:2">
+        <input id="order-amt-input"  class="mgmt-input" placeholder="訂單金額" type="number" style="flex:2">
+        <button class="mgmt-add-btn" onclick="addOrder()">＋ 新增</button>
+      </div>
+      <table class="mgmt-table">
+        <thead><tr><th style="width:30%">維度名稱</th><th style="width:35%">訂單金額</th><th style="width:20%">更新時間</th><th style="width:15%">操作</th></tr></thead>
+        <tbody id="order-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Upload Modal (lightweight, used when already inside app) ── -->
+<div class="upl-modal" id="upl-modal">
+  <div class="upl-box">
+    <div class="upl-header">
+      <h3>📤 上傳新資料</h3>
+      <button class="upl-m-close" onclick="closeUploadModal()">✕</button>
+    </div>
+    <div class="upl-body">
+      <div class="upl-drop-zone" id="upl-drop-zone" onclick="document.getElementById('upl-file-input').click()">
+        <div class="icon">📂</div>
+        <p>拖曳檔案至此，或點擊選擇</p>
+        <p class="hint">支援 .xls / .xlsx 格式</p>
+      </div>
+      <input type="file" id="upl-file-input" accept=".xls,.xlsx" style="display:none">
+      <label class="upl-select-btn" for="upl-file-input">選擇檔案</label>
+      <button class="upl-cancel-btn" onclick="closeUploadModal()">取消</button>
+      <div class="upl-modal-err" id="upl-modal-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════ */
+let RAW            = {};
+let BU_ORDER       = [];
+let CONF_ORDER     = [];
+let ALL_QUARTERS   = [];
+let ALL_REPS       = [];
+let ALL_SUPPORT_BUS = [];
+let active           = new Set();
+let activeQuarters   = new Set();   // empty = all pass
+let activeSalesSet   = new Set();   // empty = all pass
+let activeSbuSet     = new Set();   // empty = all pass
+let allRepsExpanded  = false;
+let searchQ          = '';
+let fileName         = '';
+let DEPT_ORDER       = [];
+let DEPT_RAW         = {};  // dept → [caseObj]
+let SUPPORT_BU_RAW   = {};  // supportBu → [caseObj]
+let SUPPORT_BU_ORDER = [];
+let SUPPORT_DEPT_RAW  = {};  // supportDept → [caseObj]
+let SUPPORT_DEPT_ORDER = [];
+let _lastAchieveData  = null;  // 快取最近一次 /api/achievement 回傳
+let _achieveFilterSet = null;  // null=全顯示；Set<"dimType::name">=篩選中
+let _achieveQuarters  = new Set([1, 2, 3, 4]);  // 季度篩選，預設全選
+
+const PREF_BU_ORDER = ['ISD1','ISD2','ISD3','SSDBU','SPSBU','FPSBU'];
+const PREF_CONF_ORDER = ['Base','ACP','Option-補救','Option','Maximum'];
+
+const CONF_CLS = {
+  'Maximum':    'max',
+  'Base':       'base',
+  'ACP':        'acp',
+  'Option-補救':'fix',
+  'Option':     'opt'
+};
+const CONF_COLOR = {
+  'Maximum':    '#00897B',
+  'Base':       '#4CAF50',
+  'ACP':        '#2196F3',
+  'Option-補救':'#FF9800',
+  'Option':     '#9C27B0'
+};
+const TAG_CLS = {
+  'Maximum':    'tag-max',
+  'Base':       'tag-base',
+  'ACP':        'tag-acp',
+  'Option-補救':'tag-fix',
+  'Option':     'tag-opt'
+};
+const CTXT_CLS = {
+  'Maximum':    'conf-max',
+  'Base':       'conf-base',
+  'ACP':        'conf-acp',
+  'Option-補救':'conf-fix',
+  'Option':     'conf-opt'
+};
+const EXTRA_COLORS = ['#607D8B','#795548','#E91E63','#FF5722','#3F51B5'];
+
+function getColor(c)   { return CONF_COLOR[c] || EXTRA_COLORS[CONF_ORDER.indexOf(c) % EXTRA_COLORS.length]; }
+function getCls(c)     { return CONF_CLS[c]   || 'opt'; }
+function getTagCls(c)  { return TAG_CLS[c]    || 'tag-opt'; }
+function getCtxtCls(c) { return CTXT_CLS[c]   || 'conf-opt'; }
+
+/* ════════════════════════════════════════════
+   MATH HELPERS
+════════════════════════════════════════════ */
+function fmt(n)  { return n > 0 ? n.toLocaleString('zh-TW') : '-'; }
+function fmtM(n) { if (!n) return ''; const k = Math.round(n / 1e3); return k.toLocaleString('zh-TW') + 'K'; }
+
+/* ── Misc helpers ── */
+function safe(s) { return String(s).replace(/[^a-zA-Z0-9]/g, '_'); }
+
+function dateToQuarter(dateStr) {
+  if (!dateStr) return '';
+  const m = dateStr.match(/(\d{4})\/(\d{2})/);
+  if (!m) return '';
+  return `${m[1]}-Q${Math.ceil(parseInt(m[2]) / 3)}`;
+}
+
+function casePasses(cas) {
+  if (activeSalesSet.size > 0 && !activeSalesSet.has(cas.rep)) return false;
+  if (activeQuarters.size > 0) {
+    const q = dateToQuarter(cas.date);
+    if (q && !activeQuarters.has(q)) return false;
+  }
+  if (activeSbuSet.size > 0) {
+    const hasSbu = Object.values(cas.conf).some(items => items.some(it => activeSbuSet.has(it.supportBu)));
+    if (!hasSbu) return false;
+  }
+  return true;
+}
+
+/* ── Case primary conf (by CONF_ORDER priority) ── */
+function primConf(cas) { return CONF_ORDER.find(c => cas.conf[c]) || Object.keys(cas.conf)[0] || ''; }
+
+/* ── Amount helpers ── */
+function caseAmt(cas, c)      { return (cas.conf[c] || []).reduce((s, i) => s + i.amt, 0); }
+function caseTotalActive(cas) { return CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + caseAmt(cas, c), 0); }
+
+/* All helpers below respect casePasses() */
+function buConfAmt(bu, c)     { return (RAW[bu]||[]).filter(casePasses).reduce((s, cas) => s + caseAmt(cas, c), 0); }
+function buTotalActive(bu)    { return CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + buConfAmt(bu, c), 0); }
+function grandAmt(c)          { return BU_ORDER.reduce((s, bu) => s + buConfAmt(bu, c), 0); }
+function grandTotalActive()   { return CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + grandAmt(c), 0); }
+
+/* Conf-group amounts: cases in this BU where primConf=gconf */
+function cgAmt(bu, gconf, colConf) {
+  return (RAW[bu]||[]).filter(cas => casePasses(cas) && primConf(cas) === gconf)
+    .reduce((s, cas) => s + caseAmt(cas, colConf), 0);
+}
+function cgTotal(bu, gconf) {
+  return CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + cgAmt(bu, gconf, c), 0);
+}
+
+/* Rep-group amounts: cases in BU+gconf where rep=rep */
+function rgAmt(bu, gconf, rep, colConf) {
+  return (RAW[bu]||[]).filter(cas => casePasses(cas) && primConf(cas) === gconf && cas.rep === rep)
+    .reduce((s, cas) => s + caseAmt(cas, colConf), 0);
+}
+function rgTotal(bu, gconf, rep) {
+  return CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + rgAmt(bu, gconf, rep, c), 0);
+}
+
+/* Rep summary-table amounts: all cases (any BU) for this rep */
+function repAmt(rep, c) {
+  return BU_ORDER.reduce((s, bu) =>
+    s + (RAW[bu]||[]).filter(cas => casePasses(cas) && cas.rep === rep)
+        .reduce((ss, cas) => ss + caseAmt(cas, c), 0), 0);
+}
+
+/* ── Dept-dimension helpers (parallel to BU helpers) ── */
+function deptConfAmt(dept, c)      { return (DEPT_RAW[dept]||[]).filter(casePasses).reduce((s,cas)=>s+caseAmt(cas,c),0); }
+function supportBuConfAmt(bu, c)   { return (SUPPORT_BU_RAW[bu]||[]).filter(casePasses).reduce((s,cas)=>s+caseAmt(cas,c),0); }
+function supportDeptConfAmt(d, c)  { return (SUPPORT_DEPT_RAW[d]||[]).filter(casePasses).reduce((s,cas)=>s+caseAmt(cas,c),0); }
+function deptTotalActive(dept) { return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+deptConfAmt(dept,c),0); }
+function dcgAmt(dept, gconf, colConf) {
+  return (DEPT_RAW[dept]||[]).filter(cas=>casePasses(cas)&&primConf(cas)===gconf)
+    .reduce((s,cas)=>s+caseAmt(cas,colConf),0);
+}
+function dcgTotal(dept, gconf) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+dcgAmt(dept,gconf,c),0);
+}
+function drgAmt(dept, gconf, rep, colConf) {
+  return (DEPT_RAW[dept]||[]).filter(cas=>casePasses(cas)&&primConf(cas)===gconf&&cas.rep===rep)
+    .reduce((s,cas)=>s+caseAmt(cas,colConf),0);
+}
+function drgTotal(dept, gconf, rep) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+drgAmt(dept,gconf,rep,c),0);
+}
+function deptGrandAmt(c)        { return DEPT_ORDER.reduce((s,dept)=>s+deptConfAmt(dept,c),0); }
+function deptGrandTotalActive() { return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+deptGrandAmt(c),0); }
+
+/* ── 支援BU 分項層級 helpers（1案可跨多個支援BU，只計屬於該 sbu 的分項） ── */
+function sBuCaseItemAmt(cas, sbu, colConf) {
+  return (cas.conf[colConf]||[]).filter(it=>it.supportBu===sbu).reduce((s,it)=>s+it.amt,0);
+}
+function sBuCaseTotalActive(cas, sbu) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sBuCaseItemAmt(cas,sbu,c),0);
+}
+function sBuConfAmt(sbu, colConf) {
+  return (SUPPORT_BU_RAW[sbu]||[]).filter(casePasses).reduce((s,cas)=>s+sBuCaseItemAmt(cas,sbu,colConf),0);
+}
+function sBuTotalActive(sbu) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sBuConfAmt(sbu,c),0);
+}
+function sBuCgAmt(sbu, gconf, colConf) {
+  return (SUPPORT_BU_RAW[sbu]||[]).filter(cas=>casePasses(cas)&&primConf(cas)===gconf)
+    .reduce((s,cas)=>s+sBuCaseItemAmt(cas,sbu,colConf),0);
+}
+function sBuCgTotal(sbu, gconf) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sBuCgAmt(sbu,gconf,c),0);
+}
+function sBuRgAmt(sbu, gconf, rep, colConf) {
+  return (SUPPORT_BU_RAW[sbu]||[]).filter(cas=>casePasses(cas)&&primConf(cas)===gconf&&cas.rep===rep)
+    .reduce((s,cas)=>s+sBuCaseItemAmt(cas,sbu,colConf),0);
+}
+function sBuRgTotal(sbu, gconf, rep) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sBuRgAmt(sbu,gconf,rep,c),0);
+}
+function sBuGrandAmt(colConf)    { return SUPPORT_BU_ORDER.reduce((s,sbu)=>s+sBuConfAmt(sbu,colConf),0); }
+function sBuGrandTotalActive()   { return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sBuGrandAmt(c),0); }
+
+/* ── 支援部門 分項層級 helpers（mirror of sBu helpers） ── */
+function sDeptCaseItemAmt(cas, sdept, colConf) {
+  return (cas.conf[colConf]||[]).filter(it=>it.supportDept===sdept).reduce((s,it)=>s+it.amt,0);
+}
+function sDeptCaseTotalActive(cas, sdept) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sDeptCaseItemAmt(cas,sdept,c),0);
+}
+function sDeptConfAmt(sdept, colConf) {
+  return (SUPPORT_DEPT_RAW[sdept]||[]).filter(casePasses).reduce((s,cas)=>s+sDeptCaseItemAmt(cas,sdept,colConf),0);
+}
+function sDeptTotalActive(sdept) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sDeptConfAmt(sdept,c),0);
+}
+function sDeptCgAmt(sdept, gconf, colConf) {
+  return (SUPPORT_DEPT_RAW[sdept]||[]).filter(cas=>casePasses(cas)&&primConf(cas)===gconf)
+    .reduce((s,cas)=>s+sDeptCaseItemAmt(cas,sdept,colConf),0);
+}
+function sDeptCgTotal(sdept, gconf) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sDeptCgAmt(sdept,gconf,c),0);
+}
+function sDeptRgAmt(sdept, gconf, rep, colConf) {
+  return (SUPPORT_DEPT_RAW[sdept]||[]).filter(cas=>casePasses(cas)&&primConf(cas)===gconf&&cas.rep===rep)
+    .reduce((s,cas)=>s+sDeptCaseItemAmt(cas,sdept,colConf),0);
+}
+function sDeptRgTotal(sdept, gconf, rep) {
+  return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sDeptRgAmt(sdept,gconf,rep,c),0);
+}
+function sDeptGrandAmt(colConf)  { return SUPPORT_DEPT_ORDER.reduce((s,sdept)=>s+sDeptConfAmt(sdept,colConf),0); }
+function sDeptGrandTotalActive() { return CONF_ORDER.filter(c=>active.has(c)).reduce((s,c)=>s+sDeptGrandAmt(c),0); }
+function repTotal(rep) {
+  return CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + repAmt(rep, c), 0);
+}
+
+/* ════════════════════════════════════════════
+   XLS PARSING
+════════════════════════════════════════════ */
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function excelDateToStr(val) {
+  if (!val) return '';
+  if (val instanceof Date) {
+    return `${val.getFullYear()}/${pad2(val.getMonth()+1)}/${pad2(val.getDate())}`;
+  }
+  if (typeof val === 'number' && val > 1000) {
+    const d = new Date((val - 25569) * 86400000);
+    return `${d.getUTCFullYear()}/${pad2(d.getUTCMonth()+1)}/${pad2(d.getUTCDate())}`;
+  }
+  if (typeof val === 'string') {
+    const m = val.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    if (m) return `${m[1]}/${pad2(parseInt(m[2]))}/${pad2(parseInt(m[3]))}`;
+  }
+  return '';
+}
+
+function parseXLSData(arrayBuffer) {
+  const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', raw: true });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: true });
+
+  if (rows.length < 3) return null;
+
+  // Row 0 = report title, Row 1 = column headers, Row 2+ = data
+  const titleRow   = rows[0];
+  const headerRow  = rows[1];
+
+  // Map header name → column index
+  const col = {};
+  headerRow.forEach((h, i) => { if (h) col[String(h).trim()] = i; });
+
+  const REQ = ['客戶名稱', '銷售案名稱', '結案信心度', '銷售分項名稱', '銷售分項金額-未稅', '銷售案號', '業務代表', '業務代表BU'];
+  for (const r of REQ) {
+    if (col[r] === undefined) return { error: `找不到必要欄位「${r}」，請確認上傳的是正確格式的銷售案清單。` };
+  }
+
+  const raw          = {};
+  const deptRaw      = {};
+  const supportBuRaw   = {};
+  const supportDeptRaw = {};
+  const caseMap = {};
+  const buSet        = new Set();
+  const confSet      = new Set();
+  const deptSet      = new Set();
+  const supportBuSet   = new Set();
+  const supportDeptSet = new Set();
+
+  for (let r = 2; r < rows.length; r++) {
+    const row    = rows[r];
+    const caseNo = String(row[col['銷售案號']] || '').trim();
+    if (!caseNo) continue;
+
+    const bu          = String(row[col['業務代表BU']]          || '').trim();
+    const conf        = String(row[col['結案信心度']]           || '').trim();
+    const itemName    = String(row[col['銷售分項名稱']]         || '').trim();
+    const itemAmt     = parseFloat(row[col['銷售分項金額-未稅']]) || 0;
+    const dept        = String(row[col['業務代表部門名稱']]      || '').trim();
+    const supportBu   = String(row[col['支援BU']]              || '').trim();
+    const supportDept = String(row[col['支援部門名稱']]         || '').trim();
+
+    if (!bu || !conf) continue;
+
+    buSet.add(bu);
+    confSet.add(conf);
+    if (dept)        deptSet.add(dept);
+    if (supportBu)   supportBuSet.add(supportBu);
+    if (supportDept) supportDeptSet.add(supportDept);
+
+    if (!raw[bu]) raw[bu] = [];
+
+    let caseObj = caseMap[caseNo];
+    if (!caseObj) {
+      caseObj = {
+        cust: String(row[col['客戶名稱']]  || '').trim(),
+        case: String(row[col['銷售案名稱']] || '').trim(),
+        rep:  String(row[col['業務代表']]   || '').trim(),
+        no:   caseNo,
+        date: excelDateToStr(row[col['預定結案日']]),
+        conf: {},
+        dept:        dept,
+        supportBu:   supportBu,
+        supportDept: supportDept
+      };
+      caseMap[caseNo] = caseObj;
+      raw[bu].push(caseObj);
+      // Also index in deptRaw
+      if (dept) {
+        if (!deptRaw[dept]) deptRaw[dept] = [];
+        deptRaw[dept].push(caseObj);
+      }
+      // Also index in supportBuRaw / supportDeptRaw
+      if (supportBu) {
+        if (!supportBuRaw[supportBu]) supportBuRaw[supportBu] = [];
+        supportBuRaw[supportBu].push(caseObj);
+      }
+      if (supportDept) {
+        if (!supportDeptRaw[supportDept]) supportDeptRaw[supportDept] = [];
+        supportDeptRaw[supportDept].push(caseObj);
+      }
+    }
+
+    if (!caseObj.conf[conf]) caseObj.conf[conf] = [];
+    if (itemName) {
+      // 同一案件內，相同 (name, supportBu, supportDept) 的分項累加；不同支援部門則視為不同分項
+      const existing = caseObj.conf[conf].find(
+        x => x.name === itemName && x.supportBu === supportBu && x.supportDept === supportDept
+      );
+      if (existing) {
+        existing.amt += itemAmt;
+      } else {
+        caseObj.conf[conf].push({ name: itemName, amt: itemAmt, supportBu, supportDept });
+      }
+    }
+  }
+
+  // Determine BU order
+  const buOrder = [
+    ...PREF_BU_ORDER.filter(b => buSet.has(b)),
+    ...[...buSet].filter(b => !PREF_BU_ORDER.includes(b)).sort()
+  ];
+
+  // Determine conf order
+  const confOrder = [
+    ...PREF_CONF_ORDER.filter(c => confSet.has(c)),
+    ...[...confSet].filter(c => !PREF_CONF_ORDER.includes(c)).sort()
+  ];
+
+  // Determine dept order (sorted alphabetically)
+  const deptOrder        = [...deptSet].sort();
+  const supportBuOrder   = [...supportBuSet].sort();
+  const supportDeptOrder = [...supportDeptSet].sort();
+
+  // Extract title info
+  const titleStr = String(titleRow[0] || '');
+  const reportDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
+
+  return { raw, deptRaw, supportBuRaw, supportDeptRaw,
+           buOrder, deptOrder, supportBuOrder, supportDeptOrder,
+           confOrder, titleStr, reportDate };
+}
+
+/* ════════════════════════════════════════════
+   BUILD UI
+════════════════════════════════════════════ */
+
+function buildHeader(titleStr, reportDate) {
+  document.getElementById('app-title').textContent = '銷售案 Forecast 彙整';
+  document.getElementById('app-subtitle').textContent =
+    `資料來源：${fileName} ｜ 載入日期：${reportDate}`;
+}
+
+function buildFilters() {
+  const el = document.getElementById('filters');
+  el.innerHTML = '';
+  CONF_ORDER.forEach(c => {
+    const lbl = document.createElement('label');
+    lbl.className = 'filter-check';
+    lbl.innerHTML = `<input type="checkbox" value="${c}" checked onchange="onChg()">`
+                  + `<span class="dot dot-${getCls(c)}" style="background:${getColor(c)}"></span>${c}`;
+    el.appendChild(lbl);
+  });
+}
+
+function buildLegend() {
+  const el = document.getElementById('legend');
+  el.innerHTML = '';
+  CONF_ORDER.forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'legend-item';
+    d.innerHTML = `<div class="legend-dot" style="background:${getColor(c)}"></div>${c}`;
+    el.appendChild(d);
+  });
+}
+
+function buildQuarterFilters() {
+  const panel = document.getElementById('quarter-panel');
+  /* Keep the head, rebuild items */
+  const head  = panel.querySelector('.ms-panel-head');
+  panel.innerHTML = '';
+  panel.appendChild(head);
+  ALL_QUARTERS.forEach(q => {
+    const lbl = document.createElement('label');
+    lbl.className = 'ms-item';
+    lbl.innerHTML = `<input type="checkbox" value="${q}" checked onchange="onQuarterChg()"><span>${q.replace('-',' ')}</span>`;
+    panel.appendChild(lbl);
+  });
+  msUpdateLabel('quarter');
+}
+
+function buildSalesFilters() {
+  const panel = document.getElementById('sales-panel');
+  const head  = panel.querySelector('.ms-panel-head');
+  panel.innerHTML = '';
+  panel.appendChild(head);
+  ALL_REPS.forEach(rep => {
+    const lbl = document.createElement('label');
+    lbl.className = 'ms-item';
+    lbl.innerHTML = `<input type="checkbox" value="${rep}" checked onchange="onSalesChg()"><span>👤 ${rep}</span>`;
+    panel.appendChild(lbl);
+  });
+  msUpdateLabel('sales');
+}
+
+function buildSbuFilters() {
+  const panel = document.getElementById('sbu-panel');
+  const head  = panel.querySelector('.ms-panel-head');
+  panel.innerHTML = '';
+  panel.appendChild(head);
+  ALL_SUPPORT_BUS.forEach(sbu => {
+    const lbl = document.createElement('label');
+    lbl.className = 'ms-item';
+    lbl.innerHTML = `<input type="checkbox" value="${sbu}" checked onchange="onSbuChg()"><span>${sbu}</span>`;
+    panel.appendChild(lbl);
+  });
+  msUpdateLabel('sbu');
+}
+
+/* ── Multi-select dropdown helpers ── */
+function toggleMsPanel(id) {
+  const panel   = document.getElementById(id + '-panel');
+  const trigger = document.getElementById(id + '-trigger');
+  const opening = !panel.classList.contains('open');
+  /* Close all panels first */
+  document.querySelectorAll('.ms-panel').forEach(p => p.classList.remove('open'));
+  document.querySelectorAll('.ms-trigger').forEach(t => t.classList.remove('open'));
+  if (opening) { panel.classList.add('open'); trigger.classList.add('open'); }
+}
+
+function msUpdateLabel(id) {
+  const inputs  = [...document.querySelectorAll(`#${id}-panel input[type=checkbox]`)];
+  const checked = inputs.filter(i => i.checked).length;
+  const total   = inputs.length;
+  const trigger = document.getElementById(id + '-trigger');
+  if (!trigger) return;
+  const label   = trigger.querySelector('.ms-label');
+  const labelName = id === 'quarter' ? '季度' : id === 'sales' ? '業務' : '支援BU';
+  if (checked === total || total === 0) {
+    label.innerHTML = labelName + '&nbsp;<span class="ms-badge">全選</span>';
+  } else {
+    label.innerHTML = labelName + `&nbsp;<span class="ms-badge">${checked}/${total}</span>`;
+  }
+}
+
+function msAll(id) {
+  document.querySelectorAll(`#${id}-panel input[type=checkbox]`).forEach(i => i.checked = true);
+  id === 'quarter' ? onQuarterChg() : id === 'sales' ? onSalesChg() : onSbuChg();
+}
+
+function msNone(id) {
+  document.querySelectorAll(`#${id}-panel input[type=checkbox]`).forEach(i => i.checked = false);
+  id === 'quarter' ? onQuarterChg() : id === 'sales' ? onSalesChg() : onSbuChg();
+}
+
+function buildTableHeader() {
+  const tr = document.getElementById('thead-row');
+  tr.innerHTML = `<th class="left" style="width:34%">業務BU / 客戶名稱 / 銷售案名稱</th>`
+    + `<th style="min-width:88px">預計結案日</th>`
+    + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
+    + `<th style="min-width:90px">總計</th>`;
+  const ths = tr.querySelectorAll('th');
+  CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; }); // offset by 2: name + date
+}
+
+function buildDeptTableHeader() {
+  const tr = document.getElementById('thead-row-dept');
+  if (!tr) return;
+  tr.innerHTML = `<th class="left" style="width:34%">業務部門 / 客戶名稱 / 銷售案名稱</th>`
+    + `<th style="min-width:88px">預計結案日</th>`
+    + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
+    + `<th style="min-width:90px">總計</th>`;
+  const ths = tr.querySelectorAll('th');
+  CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; });
+}
+
+function buildSupportBuTableHeader() {
+  const tr = document.getElementById('thead-row-sbu');
+  if (!tr) return;
+  tr.innerHTML = `<th class="left" style="width:34%">支援BU / 客戶名稱 / 銷售案名稱</th>`
+    + `<th style="min-width:88px">預計結案日</th>`
+    + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
+    + `<th style="min-width:90px">總計</th>`;
+  const ths = tr.querySelectorAll('th');
+  CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; });
+}
+
+function buildSupportDeptTableHeader() {
+  const tr = document.getElementById('thead-row-sdept');
+  if (!tr) return;
+  tr.innerHTML = `<th class="left" style="width:34%">支援部門 / 客戶名稱 / 銷售案名稱</th>`
+    + `<th style="min-width:88px">預計結案日</th>`
+    + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
+    + `<th style="min-width:90px">總計</th>`;
+  const ths = tr.querySelectorAll('th');
+  CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; });
+}
+
+/* ── Dept table: Dept → Conf group → Rep group (collapsible) → Cases ── */
+function buildDeptTable() {
+  const tbody = document.getElementById('tbody-dept');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  DEPT_ORDER.forEach(dept => {
+    const allCases = (DEPT_RAW[dept] || []).filter(casePasses);
+    if (!allCases.length) return;
+
+    /* ── Dept row ── */
+    const bTr = document.createElement('tr');
+    bTr.className = 'bu-row';
+    bTr.id = 'dbu-' + safe(dept);
+    bTr.onclick = () => toggleDeptBU(dept);
+    bTr.innerHTML = `<td><div class="bu-lbl"><span class="xbtn" id="dxb-${safe(dept)}">+</span>${dept}</div></td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="dbc-${safe(dept)}-${safe(c)}">${active.has(c) && deptConfAmt(dept,c) ? fmt(deptConfAmt(dept,c)) : '-'}</td>`).join('')
+      + `<td class="num" id="dbt-${safe(dept)}">${fmt(deptTotalActive(dept))}</td>`;
+    tbody.appendChild(bTr);
+
+    /* ── Conf groups ── */
+    CONF_ORDER.forEach(gconf => {
+      const confCases = allCases
+        .filter(cas => primConf(cas) === gconf)
+        .map(cas => ({ cas, origIdx: (DEPT_RAW[dept]||[]).indexOf(cas) }))
+        .sort((a, b) => (a.cas.date || '').localeCompare(b.cas.date || ''));
+      if (!confCases.length) return;
+
+      const cgTr = document.createElement('tr');
+      cgTr.className = 'conf-group-row';
+      cgTr.id = `dcg-${safe(dept)}-${safe(gconf)}`;
+      cgTr.dataset.bu   = dept;
+      cgTr.dataset.conf = gconf;
+      cgTr.dataset.dim  = 'dept';
+      cgTr.style.setProperty('--cg-color', getColor(gconf));
+      cgTr.onclick = () => toggleDeptConf(dept, gconf);
+      cgTr.innerHTML = `<td style="border-left:4px solid ${getColor(gconf)}"><div class="conf-group-lbl"><span class="xbtn" id="dxcg-${safe(dept)}-${safe(gconf)}">+</span><span class="tag ${getTagCls(gconf)}">${gconf}</span>&nbsp;<span style="color:#666;font-weight:400;font-size:11px">(${confCases.length} 案)</span></div></td>`
+        + emptyDateTd()
+        + CONF_ORDER.map(c => `<td class="num" id="dcgc-${safe(dept)}-${safe(gconf)}-${safe(c)}">${active.has(c) && dcgAmt(dept,gconf,c) ? fmt(dcgAmt(dept,gconf,c)) : '-'}</td>`).join('')
+        + `<td class="num" id="dcgt-${safe(dept)}-${safe(gconf)}">${fmt(dcgTotal(dept,gconf))}</td>`;
+      tbody.appendChild(cgTr);
+
+      /* ── Rep groups within conf group ── */
+      const repOrder = [];
+      const repMap   = {};
+      confCases.forEach(({ cas, origIdx }) => {
+        const rep = cas.rep || '(未指定)';
+        if (!repMap[rep]) { repMap[rep] = []; repOrder.push(rep); }
+        repMap[rep].push({ cas, origIdx });
+      });
+
+      repOrder.forEach(rep => {
+        const rgTr = document.createElement('tr');
+        rgTr.className = 'rep-group-row';
+        rgTr.id = `drg-${safe(dept)}-${safe(gconf)}-${safe(rep)}`;
+        rgTr.dataset.bu   = dept;
+        rgTr.dataset.conf = gconf;
+        rgTr.dataset.rep  = rep;
+        rgTr.dataset.dim  = 'dept';
+        rgTr.onclick = () => toggleDeptRep(dept, gconf, rep);
+        rgTr.innerHTML = `<td><div class="rep-group-lbl"><span class="xbtn3" id="dxrg-${safe(dept)}-${safe(gconf)}-${safe(rep)}">+</span>👤 ${rep}&nbsp;<span style="color:#aaa;font-weight:400;font-size:11px">(${repMap[rep].length} 案)</span></div></td>`
+          + emptyDateTd()
+          + CONF_ORDER.map(c => `<td class="num" id="drgc-${safe(dept)}-${safe(gconf)}-${safe(rep)}-${safe(c)}">${active.has(c) && drgAmt(dept,gconf,rep,c) ? fmt(drgAmt(dept,gconf,rep,c)) : '-'}</td>`).join('')
+          + `<td class="num" id="drgt-${safe(dept)}-${safe(gconf)}-${safe(rep)}">${fmt(drgTotal(dept,gconf,rep))}</td>`;
+        tbody.appendChild(rgTr);
+
+        /* Case rows */
+        repMap[rep].forEach(({ cas, origIdx: ci }) => {
+          const pc = primConf(cas);
+          const cTr = document.createElement('tr');
+          cTr.className = 'case-row';
+          cTr.id = `dept-c-${safe(dept)}-${ci}`;
+          cTr.dataset.bu     = dept;
+          cTr.dataset.conf   = pc;
+          cTr.dataset.rep    = rep;
+          cTr.dataset.dim    = 'dept';
+          cTr.dataset.search = `${cas.cust} ${cas.case} ${cas.rep}`.toLowerCase();
+          cTr.onclick = () => toggleDeptCase(dept, ci);
+          cTr.innerHTML = `<td><div class="case-lbl"><span class="xbtn2" id="dxc-${safe(dept)}-${ci}">+</span>${cas.cust}<span class="tag ${getTagCls(pc)}">${pc}</span></div>`
+            + `<div style="padding-left:32px;font-size:11px;color:#666;margin-top:2px">${cas.case}</div></td>`
+            + dateTd(cas.date)
+            + CONF_ORDER.map(c => {
+                const a = caseAmt(cas, c);
+                return `<td class="${a && active.has(c) ? 'num' : 'dim'}" id="dcc-${safe(dept)}-${ci}-${safe(c)}">${active.has(c) && a ? fmt(a) : '-'}</td>`;
+              }).join('')
+            + `<td class="num" id="dct-${safe(dept)}-${ci}">${fmt(caseTotalActive(cas))}</td>`;
+          tbody.appendChild(cTr);
+
+          /* Item rows */
+          CONF_ORDER.forEach(c => {
+            (cas.conf[c] || []).forEach(item => {
+              const iTr = document.createElement('tr');
+              iTr.className = 'item-row';
+              iTr.dataset.bu    = dept;
+              iTr.dataset.ci    = ci;
+              iTr.dataset.conf  = c;
+              iTr.dataset.gconf = pc;
+              iTr.dataset.rep   = rep;
+              iTr.dataset.dim   = 'dept';
+              const cc = getCtxtCls(c);
+              iTr.innerHTML = `<td><span class="${cc}" style="padding-left:44px">▸ ${item.name}</span></td>`
+                + emptyDateTd()
+                + CONF_ORDER.map(cc2 => {
+                    if (cc2 === c) return `<td class="${item.amt && active.has(c) ? 'num' : 'dim'}">${active.has(c) ? fmt(item.amt) : '-'}</td>`;
+                    return `<td class="dim">-</td>`;
+                  }).join('')
+                + `<td class="num">${fmt(item.amt)}</td>`;
+              tbody.appendChild(iTr);
+            });
+          });
+        });
+      });
+    });
+
+    /* Dept subtotal row */
+    const sTr = document.createElement('tr');
+    sTr.className = 'sub-row';
+    sTr.dataset.bu = dept;
+    sTr.dataset.dim = 'dept';
+    sTr.innerHTML = `<td style="padding-left:26px;font-style:italic">${dept} 合計</td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="dbsc-${safe(dept)}-${safe(c)}">${active.has(c) && deptConfAmt(dept,c) ? fmt(deptConfAmt(dept,c)) : '-'}</td>`).join('')
+      + `<td class="num" id="dbs-${safe(dept)}">${fmt(deptTotalActive(dept))}</td>`;
+    tbody.appendChild(sTr);
+  });
+
+  /* Grand total */
+  const gTr = document.createElement('tr');
+  gTr.className = 'grand-row';
+  gTr.innerHTML = `<td>總計</td>`
+    + emptyDateTd()
+    + CONF_ORDER.map(c => `<td class="num" id="dgc-${safe(c)}">${active.has(c) && deptGrandAmt(c) ? fmt(deptGrandAmt(c)) : '-'}</td>`).join('')
+    + `<td class="num" id="dgt">${fmt(deptGrandTotalActive())}</td>`;
+  tbody.appendChild(gTr);
+}
+
+/* ── Cards ── */
+function buildCards() {
+  const el = document.getElementById('cards');
+  el.innerHTML = '';
+  CONF_ORDER.forEach(c => {
+    const a = grandAmt(c);
+    const d = document.createElement('div');
+    d.className = `card ${getCls(c)}`;
+    d.style.borderTopColor = getColor(c);
+    d.innerHTML = `<div class="card-label">${c}</div><div class="card-value">${fmtM(a)}</div>`;
+    el.appendChild(d);
+  });
+  const visT = CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + grandAmt(c), 0);
+  const tot  = document.createElement('div');
+  tot.className = 'card total';
+  tot.innerHTML = `<div class="card-label">篩選總計</div><div class="card-value">${fmtM(visT)}</div>`;
+  el.appendChild(tot);
+}
+
+/* ── Bar chart ── */
+function buildBar() {
+  const el = document.getElementById('bar');
+  el.innerHTML = '';
+  const buses  = BU_ORDER.filter(bu => RAW[bu] && RAW[bu].length);
+  const maxT   = Math.max(...buses.map(bu => CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + buConfAmt(bu, c), 0)), 1);
+
+  // 從 _lastAchieveData 取得業務BU Quota
+  const quotaMap = {};
+  if (_lastAchieveData && _lastAchieveData.quotas) {
+    _lastAchieveData.quotas.forEach(r => {
+      if (r.dim_type === 'sales_bu' && r.quota) quotaMap[r.dim_name] = r.quota;
+    });
+  }
+
+  buses.forEach(bu => {
+    const visT  = CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + buConfAmt(bu, c), 0);
+    const quota = quotaMap[bu] || 0;
+
+    let segs = '';
+    CONF_ORDER.forEach(c => {
+      if (!active.has(c)) return;
+      const a = buConfAmt(bu, c);
+      if (!a) return;
+      const pct = (a / maxT * 100).toFixed(1);
+      segs += `<div class="bar-seg ${getCls(c)}" style="width:${pct}%;background:${getColor(c)}" title="${c}: ${fmt(a)}">${fmtM(a)}</div>`;
+    });
+
+    // Quota 刻度線
+    let tickHtml = '';
+    if (quota > 0) {
+      const exceeded   = visT >= quota;
+      const tickColor  = exceeded ? '#4CAF50' : '#e53935';
+      if (quota <= maxT) {
+        const tickPct = (quota / maxT * 100).toFixed(2);
+        tickHtml = `<div class="bar-quota-tick" style="left:${tickPct}%;background:${tickColor};color:${tickColor}" title="Quota: ${fmt(quota)}"></div>`;
+      } else {
+        // Quota 超出圖表右側：刻度貼右邊 + 紅色箭頭
+        tickHtml = `<div class="bar-quota-tick" style="left:97%;background:${tickColor};color:${tickColor}" title="Quota: ${fmt(quota)}（超出顯示範圍）">
+          <span class="bar-quota-arrow" style="color:${tickColor}">▶</span>
+        </div>`;
+      }
+    }
+
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `<div class="bar-bu-label">${bu}</div>`
+                  + `<div class="bar-container-wrap"><div class="bar-container">${segs}</div>${tickHtml}</div>`
+                  + `<div class="bar-total">${fmtM(visT)}</div>`;
+    el.appendChild(row);
+  });
+}
+
+/* ── Cell builders ── */
+function dateTd(d)    { return `<td class="date-tag">${d || ''}</td>`; }
+function emptyDateTd(){ return `<td></td>`; }
+
+/* ── Main table: BU → Conf group → Rep group (collapsible) → Cases ── */
+function buildTable() {
+  allRepsExpanded = false;
+  const eb = document.getElementById('expand-rep-btn');
+  if (eb) eb.textContent = '＋ 展開全部業務';
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  BU_ORDER.forEach(bu => {
+    const allCases = (RAW[bu] || []).filter(casePasses);
+    if (!allCases.length) return;
+
+    /* ── BU row ── */
+    const bTr = document.createElement('tr');
+    bTr.className = 'bu-row';
+    bTr.id = 'bu-' + bu;
+    bTr.onclick = () => toggleBU(bu);
+    bTr.innerHTML = `<td><div class="bu-lbl"><span class="xbtn" id="xb-${bu}">+</span>${bu}</div></td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="bc-${bu}-${safe(c)}">${active.has(c) && buConfAmt(bu,c) ? fmt(buConfAmt(bu,c)) : '-'}</td>`).join('')
+      + `<td class="num" id="bt-${bu}">${fmt(buTotalActive(bu))}</td>`;
+    tbody.appendChild(bTr);
+
+    /* ── Conf groups (sorted by CONF_ORDER) ── */
+    CONF_ORDER.forEach(gconf => {
+      const confCases = allCases
+        .filter(cas => primConf(cas) === gconf)
+        .map(cas => ({ cas, origIdx: (RAW[bu]||[]).indexOf(cas) }))
+        .sort((a, b) => (a.cas.date || '').localeCompare(b.cas.date || ''));
+      if (!confCases.length) return;
+
+      /* Conf group row */
+      const cgTr = document.createElement('tr');
+      cgTr.className = 'conf-group-row';
+      cgTr.id = `cg-${bu}-${safe(gconf)}`;
+      cgTr.dataset.bu   = bu;
+      cgTr.dataset.conf = gconf;
+      cgTr.style.setProperty('--cg-color', getColor(gconf));
+      cgTr.onclick = () => toggleConf(bu, gconf);
+      cgTr.innerHTML = `<td style="border-left:4px solid ${getColor(gconf)}"><div class="conf-group-lbl"><span class="xbtn" id="xcg-${bu}-${safe(gconf)}">+</span><span class="tag ${getTagCls(gconf)}">${gconf}</span>&nbsp;<span style="color:#666;font-weight:400;font-size:11px">(${confCases.length} 案)</span></div></td>`
+        + emptyDateTd()
+        + CONF_ORDER.map(c => `<td class="num" id="cgc-${bu}-${safe(gconf)}-${safe(c)}">${active.has(c) && cgAmt(bu,gconf,c) ? fmt(cgAmt(bu,gconf,c)) : '-'}</td>`).join('')
+        + `<td class="num" id="cgt-${bu}-${safe(gconf)}">${fmt(cgTotal(bu,gconf))}</td>`;
+      tbody.appendChild(cgTr);
+
+      /* ── Rep groups within conf group ── */
+      const repOrder = [];
+      const repMap   = {};
+      confCases.forEach(({ cas, origIdx }) => {
+        const rep = cas.rep || '(未指定)';
+        if (!repMap[rep]) { repMap[rep] = []; repOrder.push(rep); }
+        repMap[rep].push({ cas, origIdx });
+      });
+
+      repOrder.forEach(rep => {
+        /* Rep group row */
+        const rgTr = document.createElement('tr');
+        rgTr.className = 'rep-group-row';
+        rgTr.id = `rg-${bu}-${safe(gconf)}-${safe(rep)}`;
+        rgTr.dataset.bu   = bu;
+        rgTr.dataset.conf = gconf;
+        rgTr.dataset.rep  = rep;
+        rgTr.onclick = () => toggleRep(bu, gconf, rep);
+        rgTr.innerHTML = `<td><div class="rep-group-lbl"><span class="xbtn3" id="xrg-${bu}-${safe(gconf)}-${safe(rep)}">+</span>👤 ${rep}&nbsp;<span style="color:#aaa;font-weight:400;font-size:11px">(${repMap[rep].length} 案)</span></div></td>`
+          + emptyDateTd()
+          + CONF_ORDER.map(c => `<td class="num" id="rgc-${bu}-${safe(gconf)}-${safe(rep)}-${safe(c)}">${active.has(c) && rgAmt(bu,gconf,rep,c) ? fmt(rgAmt(bu,gconf,rep,c)) : '-'}</td>`).join('')
+          + `<td class="num" id="rgt-${bu}-${safe(gconf)}-${safe(rep)}">${fmt(rgTotal(bu,gconf,rep))}</td>`;
+        tbody.appendChild(rgTr);
+
+        /* Case rows */
+        repMap[rep].forEach(({ cas, origIdx: ci }) => {
+          const pc = primConf(cas);
+          const cTr = document.createElement('tr');
+          cTr.className = 'case-row';
+          cTr.id = `c-${bu}-${ci}`;
+          cTr.dataset.bu     = bu;
+          cTr.dataset.conf   = pc;
+          cTr.dataset.rep    = rep;
+          cTr.dataset.search = `${cas.cust} ${cas.case} ${cas.rep}`.toLowerCase();
+          cTr.onclick = () => toggleCase(bu, ci);
+          cTr.innerHTML = `<td><div class="case-lbl"><span class="xbtn2" id="xc-${bu}-${ci}">+</span>${cas.cust}<span class="tag ${getTagCls(pc)}">${pc}</span></div>`
+            + `<div style="padding-left:32px;font-size:11px;color:#666;margin-top:2px">${cas.case}</div></td>`
+            + dateTd(cas.date)
+            + CONF_ORDER.map(c => {
+                const a = caseAmt(cas, c);
+                return `<td class="${a && active.has(c) ? 'num' : 'dim'}" id="cc-${bu}-${ci}-${safe(c)}">${active.has(c) && a ? fmt(a) : '-'}</td>`;
+              }).join('')
+            + `<td class="num" id="ct-${bu}-${ci}">${fmt(caseTotalActive(cas))}</td>`;
+          tbody.appendChild(cTr);
+
+          /* Item rows */
+          CONF_ORDER.forEach(c => {
+            (cas.conf[c] || []).forEach(item => {
+              const iTr = document.createElement('tr');
+              iTr.className = 'item-row';
+              iTr.dataset.bu    = bu;
+              iTr.dataset.ci    = ci;
+              iTr.dataset.conf  = c;
+              iTr.dataset.gconf = pc;
+              iTr.dataset.rep   = rep;
+              const cc = getCtxtCls(c);
+              iTr.innerHTML = `<td><span class="${cc}" style="padding-left:44px">▸ ${item.name}</span></td>`
+                + emptyDateTd()
+                + CONF_ORDER.map(cc2 => {
+                    if (cc2 === c) return `<td class="${item.amt && active.has(c) ? 'num' : 'dim'}">${active.has(c) ? fmt(item.amt) : '-'}</td>`;
+                    return `<td class="dim">-</td>`;
+                  }).join('')
+                + `<td class="num">${fmt(item.amt)}</td>`;
+              tbody.appendChild(iTr);
+            });
+          });
+        });
+      });
+    });
+
+    /* BU subtotal row */
+    const sTr = document.createElement('tr');
+    sTr.className = 'sub-row';
+    sTr.dataset.bu = bu;
+    sTr.innerHTML = `<td style="padding-left:26px;font-style:italic">${bu} 合計</td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="bsc-${bu}-${safe(c)}">${active.has(c) && buConfAmt(bu,c) ? fmt(buConfAmt(bu,c)) : '-'}</td>`).join('')
+      + `<td class="num" id="bs-${bu}">${fmt(buTotalActive(bu))}</td>`;
+    tbody.appendChild(sTr);
+  });
+
+  /* Grand total */
+  const gTr = document.createElement('tr');
+  gTr.className = 'grand-row';
+  gTr.innerHTML = `<td>總計</td>`
+    + emptyDateTd()
+    + CONF_ORDER.map(c => `<td class="num" id="gc-${safe(c)}">${active.has(c) && grandAmt(c) ? fmt(grandAmt(c)) : '-'}</td>`).join('')
+    + `<td class="num" id="gt">${fmt(grandTotalActive())}</td>`;
+  tbody.appendChild(gTr);
+
+  updateResultCount();
+}
+
+/* ════════════════════════════════════════════
+   SUPPORT BU TABLE
+════════════════════════════════════════════ */
+function buildSupportBuTable() {
+  const tbody = document.getElementById('tbody-sbu');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!SUPPORT_BU_ORDER.length) {
+    tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;color:#bbb;padding:18px">尚無支援BU資料</td></tr>';
+    return;
+  }
+
+  SUPPORT_BU_ORDER.forEach(sbu => {
+    const allCases = (SUPPORT_BU_RAW[sbu]||[]).filter(cas => casePasses(cas) && sBuCaseTotalActive(cas, sbu) > 0);
+    if (!allCases.length) return;
+
+    /* ── 支援BU row ── */
+    const bTr = document.createElement('tr');
+    bTr.className = 'bu-row';
+    bTr.id = 'sbu-' + safe(sbu);
+    bTr.onclick = () => toggleSBU(sbu);
+    bTr.innerHTML = `<td><div class="bu-lbl"><span class="xbtn" id="xsb-${safe(sbu)}">+</span>${sbu}</div></td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="sbc-${safe(sbu)}-${safe(c)}">${active.has(c)&&sBuConfAmt(sbu,c)?fmt(sBuConfAmt(sbu,c)):'-'}</td>`).join('')
+      + `<td class="num" id="sbt-${safe(sbu)}">${fmt(sBuTotalActive(sbu))}</td>`;
+    tbody.appendChild(bTr);
+
+    /* ── Conf groups ── */
+    CONF_ORDER.forEach(gconf => {
+      const confCases = allCases
+        .filter(cas => primConf(cas) === gconf)
+        .map(cas => ({ cas, origIdx: (SUPPORT_BU_RAW[sbu]||[]).indexOf(cas) }))
+        .sort((a,b) => (a.cas.date||'').localeCompare(b.cas.date||''));
+      if (!confCases.length) return;
+
+      const cgTr = document.createElement('tr');
+      cgTr.className = 'conf-group-row';
+      cgTr.id = `scg-${safe(sbu)}-${safe(gconf)}`;
+      cgTr.dataset.bu   = sbu;
+      cgTr.dataset.conf = gconf;
+      cgTr.dataset.dim  = 'sbu';
+      cgTr.style.setProperty('--cg-color', getColor(gconf));
+      cgTr.onclick = () => toggleSBUConf(sbu, gconf);
+      cgTr.innerHTML = `<td style="border-left:4px solid ${getColor(gconf)}"><div class="conf-group-lbl"><span class="xbtn" id="xscg-${safe(sbu)}-${safe(gconf)}">+</span><span class="tag ${getTagCls(gconf)}">${gconf}</span>&nbsp;<span style="color:#666;font-weight:400;font-size:11px">(${confCases.length} 案)</span></div></td>`
+        + emptyDateTd()
+        + CONF_ORDER.map(c => `<td class="num" id="scgc-${safe(sbu)}-${safe(gconf)}-${safe(c)}">${active.has(c)&&sBuCgAmt(sbu,gconf,c)?fmt(sBuCgAmt(sbu,gconf,c)):'-'}</td>`).join('')
+        + `<td class="num" id="scgt-${safe(sbu)}-${safe(gconf)}">${fmt(sBuCgTotal(sbu,gconf))}</td>`;
+      tbody.appendChild(cgTr);
+
+      /* ── Rep groups ── */
+      const repOrder = [], repMap = {};
+      confCases.forEach(({cas, origIdx}) => {
+        const rep = cas.rep || '(未指定)';
+        if (!repMap[rep]) { repMap[rep] = []; repOrder.push(rep); }
+        repMap[rep].push({cas, origIdx});
+      });
+
+      repOrder.forEach(rep => {
+        const rgTr = document.createElement('tr');
+        rgTr.className = 'rep-group-row';
+        rgTr.id = `srg-${safe(sbu)}-${safe(gconf)}-${safe(rep)}`;
+        rgTr.dataset.bu   = sbu;
+        rgTr.dataset.conf = gconf;
+        rgTr.dataset.rep  = rep;
+        rgTr.dataset.dim  = 'sbu';
+        rgTr.onclick = () => toggleSBURep(sbu, gconf, rep);
+        rgTr.innerHTML = `<td><div class="rep-group-lbl"><span class="xbtn3" id="xsrg-${safe(sbu)}-${safe(gconf)}-${safe(rep)}">+</span>👤 ${rep}&nbsp;<span style="color:#aaa;font-weight:400;font-size:11px">(${repMap[rep].length} 案)</span></div></td>`
+          + emptyDateTd()
+          + CONF_ORDER.map(c => `<td class="num" id="srgc-${safe(sbu)}-${safe(gconf)}-${safe(rep)}-${safe(c)}">${active.has(c)&&sBuRgAmt(sbu,gconf,rep,c)?fmt(sBuRgAmt(sbu,gconf,rep,c)):'-'}</td>`).join('')
+          + `<td class="num" id="srgt-${safe(sbu)}-${safe(gconf)}-${safe(rep)}">${fmt(sBuRgTotal(sbu,gconf,rep))}</td>`;
+        tbody.appendChild(rgTr);
+
+        /* Case rows */
+        repMap[rep].forEach(({cas, origIdx: ci}) => {
+          const pc = primConf(cas);
+          const cTr = document.createElement('tr');
+          cTr.className = 'case-row';
+          cTr.id = `sc-${safe(sbu)}-${ci}`;
+          cTr.dataset.bu     = sbu;
+          cTr.dataset.conf   = pc;
+          cTr.dataset.rep    = rep;
+          cTr.dataset.dim    = 'sbu';
+          cTr.dataset.search = `${cas.cust} ${cas.case} ${cas.rep}`.toLowerCase();
+          cTr.onclick = () => toggleSBUCase(sbu, ci);
+          cTr.innerHTML = `<td><div class="case-lbl"><span class="xbtn2" id="xsc-${safe(sbu)}-${ci}">+</span>${cas.cust}<span class="tag ${getTagCls(pc)}">${pc}</span></div>`
+            + `<div style="padding-left:32px;font-size:11px;color:#666;margin-top:2px">${cas.case}</div></td>`
+            + dateTd(cas.date)
+            + CONF_ORDER.map(c => {
+                const a = sBuCaseItemAmt(cas, sbu, c);
+                return `<td class="${a&&active.has(c)?'num':'dim'}" id="scc-${safe(sbu)}-${ci}-${safe(c)}">${active.has(c)&&a?fmt(a):'-'}</td>`;
+              }).join('')
+            + `<td class="num" id="sct-${safe(sbu)}-${ci}">${fmt(sBuCaseTotalActive(cas,sbu))}</td>`;
+          tbody.appendChild(cTr);
+
+          /* Item rows — only items belonging to this sbu */
+          CONF_ORDER.forEach(c => {
+            (cas.conf[c]||[]).filter(it=>it.supportBu===sbu).forEach(item => {
+              const iTr = document.createElement('tr');
+              iTr.className = 'item-row';
+              iTr.dataset.bu    = sbu;
+              iTr.dataset.ci    = ci;
+              iTr.dataset.conf  = c;
+              iTr.dataset.gconf = pc;
+              iTr.dataset.rep   = rep;
+              iTr.dataset.dim   = 'sbu';
+              const cc = getCtxtCls(c);
+              iTr.innerHTML = `<td><span class="${cc}" style="padding-left:44px">▸ ${item.name}</span></td>`
+                + emptyDateTd()
+                + CONF_ORDER.map(cc2 => {
+                    if (cc2===c) return `<td class="${item.amt&&active.has(c)?'num':'dim'}">${active.has(c)?fmt(item.amt):'-'}</td>`;
+                    return `<td class="dim">-</td>`;
+                  }).join('')
+                + `<td class="num">${fmt(item.amt)}</td>`;
+              tbody.appendChild(iTr);
+            });
+          });
+        });
+      });
+    });
+
+    /* Subtotal row */
+    const sTr = document.createElement('tr');
+    sTr.className = 'sub-row';
+    sTr.dataset.bu = sbu;
+    sTr.dataset.dim = 'sbu';
+    sTr.innerHTML = `<td style="padding-left:26px;font-style:italic">${sbu} 合計</td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="sbsc-${safe(sbu)}-${safe(c)}">${active.has(c)&&sBuConfAmt(sbu,c)?fmt(sBuConfAmt(sbu,c)):'-'}</td>`).join('')
+      + `<td class="num" id="sbss-${safe(sbu)}">${fmt(sBuTotalActive(sbu))}</td>`;
+    tbody.appendChild(sTr);
+  });
+
+  /* Grand total */
+  const gTr = document.createElement('tr');
+  gTr.className = 'grand-row';
+  gTr.innerHTML = `<td>總計</td>`
+    + emptyDateTd()
+    + CONF_ORDER.map(c => `<td class="num">${active.has(c)&&sBuGrandAmt(c)?fmt(sBuGrandAmt(c)):'-'}</td>`).join('')
+    + `<td class="num">${fmt(sBuGrandTotalActive())}</td>`;
+  tbody.appendChild(gTr);
+}
+
+/* ════════════════════════════════════════════
+   SUPPORT DEPT TABLE
+════════════════════════════════════════════ */
+function buildSupportDeptTable() {
+  const tbody = document.getElementById('tbody-sdept');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!SUPPORT_DEPT_ORDER.length) {
+    tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;color:#bbb;padding:18px">尚無支援部門資料</td></tr>';
+    return;
+  }
+
+  SUPPORT_DEPT_ORDER.forEach(sdept => {
+    const allCases = (SUPPORT_DEPT_RAW[sdept]||[]).filter(cas => casePasses(cas) && sDeptCaseTotalActive(cas, sdept) > 0);
+    if (!allCases.length) return;
+
+    /* ── 支援部門 row ── */
+    const bTr = document.createElement('tr');
+    bTr.className = 'bu-row';
+    bTr.id = 'sdept-' + safe(sdept);
+    bTr.onclick = () => toggleSDept(sdept);
+    bTr.innerHTML = `<td><div class="bu-lbl"><span class="xbtn" id="xsd-${safe(sdept)}">+</span>${sdept}</div></td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="sdbc-${safe(sdept)}-${safe(c)}">${active.has(c)&&sDeptConfAmt(sdept,c)?fmt(sDeptConfAmt(sdept,c)):'-'}</td>`).join('')
+      + `<td class="num" id="sdbt-${safe(sdept)}">${fmt(sDeptTotalActive(sdept))}</td>`;
+    tbody.appendChild(bTr);
+
+    /* ── Conf groups ── */
+    CONF_ORDER.forEach(gconf => {
+      const confCases = allCases
+        .filter(cas => primConf(cas) === gconf)
+        .map(cas => ({ cas, origIdx: (SUPPORT_DEPT_RAW[sdept]||[]).indexOf(cas) }))
+        .sort((a,b) => (a.cas.date||'').localeCompare(b.cas.date||''));
+      if (!confCases.length) return;
+
+      const cgTr = document.createElement('tr');
+      cgTr.className = 'conf-group-row';
+      cgTr.id = `sdcg-${safe(sdept)}-${safe(gconf)}`;
+      cgTr.dataset.bu   = sdept;
+      cgTr.dataset.conf = gconf;
+      cgTr.dataset.dim  = 'sdept';
+      cgTr.style.setProperty('--cg-color', getColor(gconf));
+      cgTr.onclick = () => toggleSDeptConf(sdept, gconf);
+      cgTr.innerHTML = `<td style="border-left:4px solid ${getColor(gconf)}"><div class="conf-group-lbl"><span class="xbtn" id="xsdcg-${safe(sdept)}-${safe(gconf)}">+</span><span class="tag ${getTagCls(gconf)}">${gconf}</span>&nbsp;<span style="color:#666;font-weight:400;font-size:11px">(${confCases.length} 案)</span></div></td>`
+        + emptyDateTd()
+        + CONF_ORDER.map(c => `<td class="num" id="sdcgc-${safe(sdept)}-${safe(gconf)}-${safe(c)}">${active.has(c)&&sDeptCgAmt(sdept,gconf,c)?fmt(sDeptCgAmt(sdept,gconf,c)):'-'}</td>`).join('')
+        + `<td class="num" id="sdcgt-${safe(sdept)}-${safe(gconf)}">${fmt(sDeptCgTotal(sdept,gconf))}</td>`;
+      tbody.appendChild(cgTr);
+
+      /* ── Rep groups ── */
+      const repOrder = [], repMap = {};
+      confCases.forEach(({cas, origIdx}) => {
+        const rep = cas.rep || '(未指定)';
+        if (!repMap[rep]) { repMap[rep] = []; repOrder.push(rep); }
+        repMap[rep].push({cas, origIdx});
+      });
+
+      repOrder.forEach(rep => {
+        const rgTr = document.createElement('tr');
+        rgTr.className = 'rep-group-row';
+        rgTr.id = `sdrg-${safe(sdept)}-${safe(gconf)}-${safe(rep)}`;
+        rgTr.dataset.bu   = sdept;
+        rgTr.dataset.conf = gconf;
+        rgTr.dataset.rep  = rep;
+        rgTr.dataset.dim  = 'sdept';
+        rgTr.onclick = () => toggleSDeptRep(sdept, gconf, rep);
+        rgTr.innerHTML = `<td><div class="rep-group-lbl"><span class="xbtn3" id="xsdrg-${safe(sdept)}-${safe(gconf)}-${safe(rep)}">+</span>👤 ${rep}&nbsp;<span style="color:#aaa;font-weight:400;font-size:11px">(${repMap[rep].length} 案)</span></div></td>`
+          + emptyDateTd()
+          + CONF_ORDER.map(c => `<td class="num" id="sdrgc-${safe(sdept)}-${safe(gconf)}-${safe(rep)}-${safe(c)}">${active.has(c)&&sDeptRgAmt(sdept,gconf,rep,c)?fmt(sDeptRgAmt(sdept,gconf,rep,c)):'-'}</td>`).join('')
+          + `<td class="num" id="sdrgt-${safe(sdept)}-${safe(gconf)}-${safe(rep)}">${fmt(sDeptRgTotal(sdept,gconf,rep))}</td>`;
+        tbody.appendChild(rgTr);
+
+        /* Case rows */
+        repMap[rep].forEach(({cas, origIdx: ci}) => {
+          const pc = primConf(cas);
+          const cTr = document.createElement('tr');
+          cTr.className = 'case-row';
+          cTr.id = `sdc-${safe(sdept)}-${ci}`;
+          cTr.dataset.bu     = sdept;
+          cTr.dataset.conf   = pc;
+          cTr.dataset.rep    = rep;
+          cTr.dataset.dim    = 'sdept';
+          cTr.dataset.search = `${cas.cust} ${cas.case} ${cas.rep}`.toLowerCase();
+          cTr.onclick = () => toggleSDeptCase(sdept, ci);
+          cTr.innerHTML = `<td><div class="case-lbl"><span class="xbtn2" id="xsdc-${safe(sdept)}-${ci}">+</span>${cas.cust}<span class="tag ${getTagCls(pc)}">${pc}</span></div>`
+            + `<div style="padding-left:32px;font-size:11px;color:#666;margin-top:2px">${cas.case}</div></td>`
+            + dateTd(cas.date)
+            + CONF_ORDER.map(c => {
+                const a = sDeptCaseItemAmt(cas, sdept, c);
+                return `<td class="${a&&active.has(c)?'num':'dim'}" id="sdcc-${safe(sdept)}-${ci}-${safe(c)}">${active.has(c)&&a?fmt(a):'-'}</td>`;
+              }).join('')
+            + `<td class="num" id="sdct-${safe(sdept)}-${ci}">${fmt(sDeptCaseTotalActive(cas,sdept))}</td>`;
+          tbody.appendChild(cTr);
+
+          /* Item rows — only items belonging to this sdept */
+          CONF_ORDER.forEach(c => {
+            (cas.conf[c]||[]).filter(it=>it.supportDept===sdept).forEach(item => {
+              const iTr = document.createElement('tr');
+              iTr.className = 'item-row';
+              iTr.dataset.bu    = sdept;
+              iTr.dataset.ci    = ci;
+              iTr.dataset.conf  = c;
+              iTr.dataset.gconf = pc;
+              iTr.dataset.rep   = rep;
+              iTr.dataset.dim   = 'sdept';
+              const cc = getCtxtCls(c);
+              iTr.innerHTML = `<td><span class="${cc}" style="padding-left:44px">▸ ${item.name}</span></td>`
+                + emptyDateTd()
+                + CONF_ORDER.map(cc2 => {
+                    if (cc2===c) return `<td class="${item.amt&&active.has(c)?'num':'dim'}">${active.has(c)?fmt(item.amt):'-'}</td>`;
+                    return `<td class="dim">-</td>`;
+                  }).join('')
+                + `<td class="num">${fmt(item.amt)}</td>`;
+              tbody.appendChild(iTr);
+            });
+          });
+        });
+      });
+    });
+
+    /* Subtotal row */
+    const sTr = document.createElement('tr');
+    sTr.className = 'sub-row';
+    sTr.dataset.bu = sdept;
+    sTr.dataset.dim = 'sdept';
+    sTr.innerHTML = `<td style="padding-left:26px;font-style:italic">${sdept} 合計</td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="sdbsc-${safe(sdept)}-${safe(c)}">${active.has(c)&&sDeptConfAmt(sdept,c)?fmt(sDeptConfAmt(sdept,c)):'-'}</td>`).join('')
+      + `<td class="num" id="sdbss-${safe(sdept)}">${fmt(sDeptTotalActive(sdept))}</td>`;
+    tbody.appendChild(sTr);
+  });
+
+  /* Grand total */
+  const gTr = document.createElement('tr');
+  gTr.className = 'grand-row';
+  gTr.innerHTML = `<td>總計</td>`
+    + emptyDateTd()
+    + CONF_ORDER.map(c => `<td class="num">${active.has(c)&&sDeptGrandAmt(c)?fmt(sDeptGrandAmt(c)):'-'}</td>`).join('')
+    + `<td class="num">${fmt(sDeptGrandTotalActive())}</td>`;
+  tbody.appendChild(gTr);
+}
+
+/* ════════════════════════════════════════════
+   TOGGLE / FILTER / SEARCH
+════════════════════════════════════════════ */
+
+/* ── Toggle BU: shows/hides all conf-group rows ── */
+function toggleBU(bu) {
+  const btn    = document.getElementById('xb-' + bu);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    /* Collapse everything under this BU */
+    document.querySelectorAll(`.conf-group-row[data-bu="${bu}"], .rep-group-row[data-bu="${bu}"], .case-row[data-bu="${bu}"], .item-row[data-bu="${bu}"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    document.querySelector(`.sub-row[data-bu="${bu}"]`)?.classList.remove('vis');
+    /* Reset inner toggle buttons */
+    document.querySelectorAll(`[id^="xcg-${bu}-"],[id^="xrg-${bu}-"],[id^="xc-${bu}-"]`)
+      .forEach(e => e.textContent = '+');
+    btn.textContent = '+';
+  } else {
+    /* Expand: show conf-group rows only */
+    document.querySelectorAll(`.conf-group-row[data-bu="${bu}"]`).forEach(tr => tr.classList.add('vis'));
+    document.querySelector(`.sub-row[data-bu="${bu}"]`)?.classList.add('vis');
+    btn.textContent = '-';
+  }
+}
+
+/* ── Toggle Conf group: shows/hides rep-group rows under it ── */
+function toggleConf(bu, gconf) {
+  const btn    = document.getElementById(`xcg-${bu}-${safe(gconf)}`);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.rep-group-row[data-bu="${bu}"][data-conf="${gconf}"], .case-row[data-bu="${bu}"][data-conf="${gconf}"], .item-row[data-bu="${bu}"][data-gconf="${gconf}"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    document.querySelectorAll(`[id^="xrg-${bu}-${safe(gconf)}-"]`).forEach(e => e.textContent = '+');
+    document.querySelectorAll(`.case-row[data-bu="${bu}"][data-conf="${gconf}"]`).forEach(tr => {
+      const ci = tr.id.replace(`c-${bu}-`, '');
+      const xc = document.getElementById(`xc-${bu}-${ci}`);
+      if (xc) xc.textContent = '+';
+    });
+    btn.textContent = '+';
+  } else {
+    /* Show rep-group rows under this conf */
+    document.querySelectorAll(`.rep-group-row[data-bu="${bu}"][data-conf="${gconf}"]`).forEach(tr => tr.classList.add('vis'));
+    btn.textContent = '-';
+  }
+}
+
+/* ── Toggle Rep group: shows/hides case rows under it ── */
+function toggleRep(bu, gconf, rep) {
+  const btn    = document.getElementById(`xrg-${bu}-${safe(gconf)}-${safe(rep)}`);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.case-row[data-bu="${bu}"][data-conf="${gconf}"][data-rep="${rep}"]`)
+      .forEach(tr => {
+        tr.classList.remove('vis');
+        const ci = tr.id.replace(`c-${bu}-`, '');
+        document.querySelectorAll(`.item-row[data-bu="${bu}"][data-ci="${ci}"]`).forEach(it => it.classList.remove('vis'));
+        const xc = document.getElementById(`xc-${bu}-${ci}`);
+        if (xc) xc.textContent = '+';
+      });
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.case-row[data-bu="${bu}"][data-conf="${gconf}"][data-rep="${rep}"]`)
+      .forEach(tr => {
+        if (!tr.classList.contains('search-hide') && active.has(tr.dataset.conf)) tr.classList.add('vis');
+      });
+    btn.textContent = '-';
+  }
+}
+
+/* ── Toggle Case: shows/hides item rows ── */
+function toggleCase(bu, ci) {
+  const btn    = document.getElementById(`xc-${bu}-${ci}`);
+  const isOpen = btn.textContent === '-';
+  document.querySelectorAll(`.item-row[data-bu="${bu}"][data-ci="${ci}"]`).forEach(tr => {
+    if (isOpen) { tr.classList.remove('vis'); }
+    else { if (active.has(tr.dataset.conf)) tr.classList.add('vis'); }
+  });
+  btn.textContent = isOpen ? '+' : '-';
+}
+
+/* ── Dept-dimension toggle functions ── */
+function toggleDeptBU(dept) {
+  const btn    = document.getElementById('dxb-' + safe(dept));
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.conf-group-row[data-bu="${dept}"][data-dim="dept"], .rep-group-row[data-bu="${dept}"][data-dim="dept"], .case-row[data-bu="${dept}"][data-dim="dept"], .item-row[data-bu="${dept}"][data-dim="dept"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    document.querySelector(`.sub-row[data-bu="${dept}"][data-dim="dept"]`)?.classList.remove('vis');
+    document.querySelectorAll(`[id^="dxcg-${safe(dept)}-"],[id^="dxrg-${safe(dept)}-"],[id^="dxc-${safe(dept)}-"]`)
+      .forEach(e => e.textContent = '+');
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.conf-group-row[data-bu="${dept}"][data-dim="dept"]`).forEach(tr => tr.classList.add('vis'));
+    document.querySelector(`.sub-row[data-bu="${dept}"][data-dim="dept"]`)?.classList.add('vis');
+    btn.textContent = '-';
+  }
+}
+
+function toggleDeptConf(dept, gconf) {
+  const btn    = document.getElementById(`dxcg-${safe(dept)}-${safe(gconf)}`);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.rep-group-row[data-bu="${dept}"][data-conf="${gconf}"][data-dim="dept"], .case-row[data-bu="${dept}"][data-conf="${gconf}"][data-dim="dept"], .item-row[data-bu="${dept}"][data-gconf="${gconf}"][data-dim="dept"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    document.querySelectorAll(`[id^="dxrg-${safe(dept)}-${safe(gconf)}-"]`).forEach(e => e.textContent = '+');
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.rep-group-row[data-bu="${dept}"][data-conf="${gconf}"][data-dim="dept"]`).forEach(tr => tr.classList.add('vis'));
+    btn.textContent = '-';
+  }
+}
+
+function toggleDeptRep(dept, gconf, rep) {
+  const btn    = document.getElementById(`dxrg-${safe(dept)}-${safe(gconf)}-${safe(rep)}`);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.case-row[data-bu="${dept}"][data-conf="${gconf}"][data-rep="${rep}"][data-dim="dept"]`)
+      .forEach(tr => {
+        tr.classList.remove('vis');
+        const ci = tr.id.replace(`dept-c-${safe(dept)}-`, '');
+        document.querySelectorAll(`.item-row[data-bu="${dept}"][data-ci="${ci}"][data-dim="dept"]`).forEach(it => it.classList.remove('vis'));
+        const xc = document.getElementById(`dxc-${safe(dept)}-${ci}`);
+        if (xc) xc.textContent = '+';
+      });
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.case-row[data-bu="${dept}"][data-conf="${gconf}"][data-rep="${rep}"][data-dim="dept"]`)
+      .forEach(tr => {
+        if (!tr.classList.contains('search-hide') && active.has(tr.dataset.conf)) tr.classList.add('vis');
+      });
+    btn.textContent = '-';
+  }
+}
+
+function toggleDeptCase(dept, ci) {
+  const btn    = document.getElementById(`dxc-${safe(dept)}-${ci}`);
+  const isOpen = btn.textContent === '-';
+  document.querySelectorAll(`.item-row[data-bu="${dept}"][data-ci="${ci}"][data-dim="dept"]`).forEach(tr => {
+    if (isOpen) { tr.classList.remove('vis'); }
+    else { if (active.has(tr.dataset.conf)) tr.classList.add('vis'); }
+  });
+  btn.textContent = isOpen ? '+' : '-';
+}
+
+/* ── Toggle Support BU ── */
+function toggleSBU(sbu) {
+  const btn = document.getElementById('xsb-' + safe(sbu));
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.conf-group-row[data-bu="${sbu}"][data-dim="sbu"], .rep-group-row[data-bu="${sbu}"][data-dim="sbu"], .case-row[data-bu="${sbu}"][data-dim="sbu"], .item-row[data-bu="${sbu}"][data-dim="sbu"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    document.querySelector(`.sub-row[data-bu="${sbu}"][data-dim="sbu"]`)?.classList.remove('vis');
+    document.querySelectorAll(`[id^="xscg-${safe(sbu)}-"],[id^="xsrg-${safe(sbu)}-"],[id^="xsc-${safe(sbu)}-"]`)
+      .forEach(e => e.textContent = '+');
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.conf-group-row[data-bu="${sbu}"][data-dim="sbu"]`).forEach(tr => tr.classList.add('vis'));
+    document.querySelector(`.sub-row[data-bu="${sbu}"][data-dim="sbu"]`)?.classList.add('vis');
+    btn.textContent = '-';
+  }
+}
+function toggleSBUConf(sbu, gconf) {
+  const btn = document.getElementById(`xscg-${safe(sbu)}-${safe(gconf)}`);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.rep-group-row[data-bu="${sbu}"][data-conf="${gconf}"][data-dim="sbu"], .case-row[data-bu="${sbu}"][data-conf="${gconf}"][data-dim="sbu"], .item-row[data-bu="${sbu}"][data-gconf="${gconf}"][data-dim="sbu"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.rep-group-row[data-bu="${sbu}"][data-conf="${gconf}"][data-dim="sbu"]`).forEach(tr => tr.classList.add('vis'));
+    btn.textContent = '-';
+  }
+}
+function toggleSBURep(sbu, gconf, rep) {
+  const btn = document.getElementById(`xsrg-${safe(sbu)}-${safe(gconf)}-${safe(rep)}`);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.case-row[data-bu="${sbu}"][data-conf="${gconf}"][data-rep="${rep}"][data-dim="sbu"]`)
+      .forEach(tr => { tr.classList.remove('vis'); });
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.case-row[data-bu="${sbu}"][data-conf="${gconf}"][data-rep="${rep}"][data-dim="sbu"]`)
+      .forEach(tr => tr.classList.add('vis'));
+    btn.textContent = '-';
+  }
+}
+function toggleSBUCase(sbu, ci) {
+  const btn = document.getElementById(`xsc-${safe(sbu)}-${ci}`);
+  const isOpen = btn.textContent === '-';
+  document.querySelectorAll(`.item-row[data-bu="${sbu}"][data-ci="${ci}"][data-dim="sbu"]`)
+    .forEach(tr => { isOpen ? tr.classList.remove('vis') : tr.classList.add('vis'); });
+  btn.textContent = isOpen ? '+' : '-';
+}
+
+/* ── Toggle Support Dept ── */
+function toggleSDept(sdept) {
+  const btn = document.getElementById('xsd-' + safe(sdept));
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.conf-group-row[data-bu="${sdept}"][data-dim="sdept"], .rep-group-row[data-bu="${sdept}"][data-dim="sdept"], .case-row[data-bu="${sdept}"][data-dim="sdept"], .item-row[data-bu="${sdept}"][data-dim="sdept"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    document.querySelector(`.sub-row[data-bu="${sdept}"][data-dim="sdept"]`)?.classList.remove('vis');
+    document.querySelectorAll(`[id^="xsdcg-${safe(sdept)}-"],[id^="xsdrg-${safe(sdept)}-"],[id^="xsdc-${safe(sdept)}-"]`)
+      .forEach(e => e.textContent = '+');
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.conf-group-row[data-bu="${sdept}"][data-dim="sdept"]`).forEach(tr => tr.classList.add('vis'));
+    document.querySelector(`.sub-row[data-bu="${sdept}"][data-dim="sdept"]`)?.classList.add('vis');
+    btn.textContent = '-';
+  }
+}
+function toggleSDeptConf(sdept, gconf) {
+  const btn = document.getElementById(`xsdcg-${safe(sdept)}-${safe(gconf)}`);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.rep-group-row[data-bu="${sdept}"][data-conf="${gconf}"][data-dim="sdept"], .case-row[data-bu="${sdept}"][data-conf="${gconf}"][data-dim="sdept"], .item-row[data-bu="${sdept}"][data-gconf="${gconf}"][data-dim="sdept"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.rep-group-row[data-bu="${sdept}"][data-conf="${gconf}"][data-dim="sdept"]`).forEach(tr => tr.classList.add('vis'));
+    btn.textContent = '-';
+  }
+}
+function toggleSDeptRep(sdept, gconf, rep) {
+  const btn = document.getElementById(`xsdrg-${safe(sdept)}-${safe(gconf)}-${safe(rep)}`);
+  const isOpen = btn.textContent === '-';
+  if (isOpen) {
+    document.querySelectorAll(`.case-row[data-bu="${sdept}"][data-conf="${gconf}"][data-rep="${rep}"][data-dim="sdept"]`)
+      .forEach(tr => tr.classList.remove('vis'));
+    btn.textContent = '+';
+  } else {
+    document.querySelectorAll(`.case-row[data-bu="${sdept}"][data-conf="${gconf}"][data-rep="${rep}"][data-dim="sdept"]`)
+      .forEach(tr => tr.classList.add('vis'));
+    btn.textContent = '-';
+  }
+}
+function toggleSDeptCase(sdept, ci) {
+  const btn = document.getElementById(`xsdc-${safe(sdept)}-${ci}`);
+  const isOpen = btn.textContent === '-';
+  document.querySelectorAll(`.item-row[data-bu="${sdept}"][data-ci="${ci}"][data-dim="sdept"]`)
+    .forEach(tr => { isOpen ? tr.classList.remove('vis') : tr.classList.add('vis'); });
+  btn.textContent = isOpen ? '+' : '-';
+}
+
+/* ── Dim tab switching ── */
+function switchDimTab(dim) {
+  ['bu','dept','sbu','sdept'].forEach(d => {
+    document.getElementById('dim-' + d).style.display = dim===d ? '' : 'none';
+    document.getElementById('dim-tab-' + d).classList.toggle('active', dim===d);
+  });
+}
+
+/* ── Section collapse/expand ── */
+function toggleSection(name) {
+  const body = document.getElementById(`section-${name}-body`);
+  const btn  = document.getElementById(`collapse-${name}-btn`);
+  const isCollapsed = body.classList.contains('collapsed');
+  if (isCollapsed) {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    body.classList.remove('collapsed');
+    btn.textContent = '▲ 收合';
+  } else {
+    body.style.maxHeight = body.scrollHeight + 'px';
+    requestAnimationFrame(() => { body.classList.add('collapsed'); });
+    btn.textContent = '▼ 展開';
+  }
+}
+
+/* ════════════════════════════════════════════
+   達成率 SECTION  — 由後端 /api/achievement 動態計算
+   Quota + 訂單 + 銷售案金額全部由 server 即時查詢，不依賴前端記憶體
+════════════════════════════════════════════ */
+/* ── 季度 Toggle ── */
+function toggleAchieveQuarter(q) {
+  if (_achieveQuarters.has(q)) {
+    if (_achieveQuarters.size <= 1) return;   // 至少保留 1 季
+    _achieveQuarters.delete(q);
+  } else {
+    _achieveQuarters.add(q);
+  }
+  // 同步按鈕樣式
+  document.querySelectorAll('.achieve-q-btn').forEach(btn => {
+    btn.classList.toggle('active', _achieveQuarters.has(parseInt(btn.dataset.q)));
+  });
+  buildAchieveSection();
+}
+
+async function buildAchieveSection() {
+  const el = document.getElementById('achieve-cards');
+  if (!el) return;
+
+  const year     = (document.getElementById('achieve-year-sel') || {}).value || new Date().getFullYear();
+  const quarters = [..._achieveQuarters].sort().join(',');
+  el.innerHTML = '<div class="achieve-empty">載入中…</div>';
+
+  let data;
+  try {
+    const res = await fetch(`/api/achievement?year=${year}&quarters=${quarters}`);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    data = await res.json();
+  } catch(e) {
+    el.innerHTML = '<div class="achieve-empty">無法取得達成率資料。</div>';
+    return;
+  }
+
+  _lastAchieveData  = data;
+  _achieveFilterSet = null;               // 年度切換時重置篩選
+  buildAchieveFilterPanel(data);          // 重建篩選面板
+  updateAchieveFilterBtn();               // 同步按鈕文字
+  renderAchieveCards(data, null);         // 全部顯示
+  buildBar();                             // 重繪 bar chart（加入 Quota 刻度線）
+}
+
+/* ── 篩選面板 ── */
+function buildAchieveFilterPanel(data) {
+  const panel = document.getElementById('achieve-filter-panel');
+  if (!panel) return;
+
+  const { quotas = [] } = data;
+  const DIM_LABELS = { sales_bu:'業務BU', sales_dept:'業務部門', support_bu:'支援BU', support_dept:'支援部門' };
+  const DIM_PREF   = ['sales_bu','sales_dept','support_bu','support_dept'];
+
+  const quotaByDim = {};
+  quotas.forEach(r => {
+    if (!r.quota) return;
+    if (!quotaByDim[r.dim_type]) quotaByDim[r.dim_type] = [];
+    if (!quotaByDim[r.dim_type].includes(r.dim_name)) quotaByDim[r.dim_type].push(r.dim_name);
+  });
+
+  const dimTypes = [
+    ...DIM_PREF.filter(d => quotaByDim[d] && quotaByDim[d].length),
+    ...Object.keys(quotaByDim).filter(d => !DIM_PREF.includes(d))
+  ];
+
+  let html = `<div class="achieve-filter-top">
+    <button onclick="achieveFilterAll(true)">全選</button>
+    <button onclick="achieveFilterAll(false)">取消全選</button>
+  </div>`;
+
+  dimTypes.forEach((dimType, idx) => {
+    if (idx > 0) html += '<hr class="achieve-filter-sep">';
+    html += `<div class="achieve-filter-group-lbl">${DIM_LABELS[dimType] || dimType}</div>`;
+    (quotaByDim[dimType] || []).forEach(name => {
+      const key = `${dimType}::${name}`;
+      const safeId = 'af_' + key.replace(/[^a-zA-Z0-9]/g, '_');
+      html += `<div class="achieve-filter-item">
+        <input type="checkbox" id="${safeId}" data-key="${key}" checked onchange="onAchieveFilterChg()">
+        <label for="${safeId}">${name}</label>
+      </div>`;
+    });
+  });
+
+  panel.innerHTML = html;
+}
+
+function toggleAchieveFilter(e) {
+  e.stopPropagation();
+  const panel = document.getElementById('achieve-filter-panel');
+  if (!panel) return;
+  const opening = !panel.classList.contains('open');
+  panel.classList.toggle('open', opening);
+  if (opening) {
+    const handler = ev => {
+      const wrap = document.getElementById('achieve-filter-wrap');
+      if (wrap && wrap.contains(ev.target)) return;
+      panel.classList.remove('open');
+      document.removeEventListener('click', handler);
+    };
+    document.addEventListener('click', handler);
+  }
+}
+
+function achieveFilterAll(checked) {
+  document.querySelectorAll('#achieve-filter-panel input[type=checkbox]')
+    .forEach(cb => { cb.checked = checked; });
+  onAchieveFilterChg();
+}
+
+function onAchieveFilterChg() {
+  const all     = [...document.querySelectorAll('#achieve-filter-panel input[type=checkbox]')];
+  const checked = all.filter(cb => cb.checked);
+  _achieveFilterSet = (checked.length === all.length)
+    ? null
+    : new Set(checked.map(cb => cb.dataset.key));
+  updateAchieveFilterBtn();
+  if (_lastAchieveData) renderAchieveCards(_lastAchieveData, _achieveFilterSet);
+}
+
+function updateAchieveFilterBtn() {
+  const btn = document.getElementById('achieve-filter-btn');
+  if (!btn) return;
+  if (!_achieveFilterSet) {
+    btn.textContent = '🔽 篩選';
+    btn.classList.remove('active');
+  } else {
+    btn.textContent = `🔽 已篩選 ${_achieveFilterSet.size} 項`;
+    btn.classList.add('active');
+  }
+}
+
+/* ── 卡片渲染（可重複呼叫，不打 API） ── */
+function renderAchieveCards(data, filterSet) {
+  const el = document.getElementById('achieve-cards');
+  if (!el) return;
+
+  const { quotas = [], order_map = {}, forecast = {} } = data;
+  const DIM_LABELS = { sales_bu:'業務BU', sales_dept:'業務部門', support_bu:'支援BU', support_dept:'支援部門' };
+  const DIM_PREF   = ['sales_bu','sales_dept','support_bu','support_dept'];
+
+  const quotaByDim = {};
+  quotas.forEach(r => {
+    const amt = r.quota || 0;
+    if (!amt) return;
+    if (!quotaByDim[r.dim_type]) quotaByDim[r.dim_type] = {};
+    quotaByDim[r.dim_type][r.dim_name] = amt;
+  });
+
+  const dimTypes = [
+    ...DIM_PREF.filter(d => quotaByDim[d] && Object.keys(quotaByDim[d]).length),
+    ...Object.keys(quotaByDim).filter(d => !DIM_PREF.includes(d))
+  ];
+
+  if (!dimTypes.length) {
+    el.innerHTML = '<div class="achieve-empty">尚未設定 Quota，請點選上方「🎯 Quota」進行設定。</div>';
+    return;
+  }
+
+  function getConfAmt(dimType, name, conf) {
+    return ((forecast[dimType] || {})[name] || {})[conf] || 0;
+  }
+  function rateColor(r) { return r >= 100 ? '#4CAF50' : r >= 70 ? '#FF9800' : '#f44336'; }
+  function progressBar(rate) {
+    const col = rateColor(rate);
+    const w   = Math.min(rate, 100).toFixed(1);
+    return `<div class="achieve-bar-wrap">
+      <div class="achieve-bar-track"><div class="achieve-bar-fill" style="width:${w}%;background:${col}"></div></div>
+      <span class="achieve-pct" style="color:${col}">${rate.toFixed(1)}%</span>
+    </div>`;
+  }
+
+  el.innerHTML = '';
+  dimTypes.forEach(dimType => {
+    const qMap = quotaByDim[dimType];
+    let names = Object.keys(qMap).filter(n => qMap[n] > 0);
+    if (filterSet) names = names.filter(n => filterSet.has(`${dimType}::${n}`));
+    if (!names.length) return;
+
+    const group = document.createElement('div');
+    group.className = 'achieve-dim-group';
+    group.innerHTML = `<div class="achieve-dim-lbl">${DIM_LABELS[dimType] || dimType}</div>`;
+
+    const cardsRow = document.createElement('div');
+    cardsRow.className = 'achieve-cards';
+
+    names.forEach(name => {
+      const quota  = qMap[name];
+      const order  = ((order_map[dimType] || {})[name]) || 0;
+      const base   = getConfAmt(dimType, name, 'Base');
+      const acp    = getConfAmt(dimType, name, 'ACP');
+      const fix    = getConfAmt(dimType, name, 'Option-補救');
+      const oba    = order + base + acp;
+      const obaFix = oba + fix;
+      const rOBA   = quota ? (oba    / quota * 100) : 0;
+      const rOBAF  = quota ? (obaFix / quota * 100) : 0;
+      const orderDisplay = order > 0 ? fmtM(order) : '—';
+
+      const card = document.createElement('div');
+      card.className = 'achieve-card';
+      card.innerHTML = `
+        <div class="achieve-card-hd">
+          <span class="achieve-bu-tag">${name}</span>
+          <span class="achieve-quota-lbl">Quota ${fmtM(quota)}</span>
+        </div>
+        <div class="achieve-order-row">
+          <span class="achieve-order-lbl">Order</span>
+          <span class="achieve-order-val">${orderDisplay}</span>
+        </div>
+        <div class="achieve-row-lbl">O + B + A</div>
+        ${progressBar(rOBA)}
+        <div class="achieve-sub">${fmtM(oba)} ／ ${fmtM(quota)}</div>
+        <hr class="achieve-divider">
+        <div class="achieve-row-lbl">O + B + A + 補救</div>
+        ${progressBar(rOBAF)}
+        <div class="achieve-sub">${fmtM(obaFix)} ／ ${fmtM(quota)}</div>`;
+      cardsRow.appendChild(card);
+    });
+
+    group.appendChild(cardsRow);
+    el.appendChild(group);
+  });
+}
+
+function onChg() {
+  active = new Set();
+  document.querySelectorAll('#filters input:checked').forEach(cb => active.add(cb.value));
+  refresh();
+}
+
+function selAll(yes) {
+  document.querySelectorAll('#filters input').forEach(cb => cb.checked = yes);
+  onChg();
+}
+
+function onQuarterChg() {
+  activeQuarters = new Set();
+  document.querySelectorAll('#quarter-panel input:checked').forEach(cb => activeQuarters.add(cb.value));
+  msUpdateLabel('quarter');
+  rebuildAfterFilter();
+}
+
+function onSalesChg() {
+  activeSalesSet = new Set();
+  document.querySelectorAll('#sales-panel input:checked').forEach(cb => activeSalesSet.add(cb.value));
+  msUpdateLabel('sales');
+  rebuildAfterFilter();
+}
+
+function onSbuChg() {
+  activeSbuSet = new Set();
+  document.querySelectorAll('#sbu-panel input:checked').forEach(cb => activeSbuSet.add(cb.value));
+  msUpdateLabel('sbu');
+  rebuildAfterFilter();
+}
+
+function clearAllFilters() {
+  document.querySelectorAll('#quarter-panel input, #sales-panel input, #sbu-panel input').forEach(cb => cb.checked = true);
+  activeQuarters = new Set(ALL_QUARTERS);
+  activeSalesSet = new Set(ALL_REPS);
+  activeSbuSet   = new Set(ALL_SUPPORT_BUS);
+  msUpdateLabel('quarter');
+  msUpdateLabel('sales');
+  msUpdateLabel('sbu');
+  rebuildAfterFilter();
+}
+
+function rebuildAfterFilter() {
+  buildCards();
+  buildBar();
+  buildTable();
+  buildDeptTable();
+  buildSupportBuTable();
+  buildSupportDeptTable();
+  buildRepTable();
+  buildAchieveSection();
+  if (searchQ) applySearch();
+}
+
+/* ── Expand / collapse ALL rep-group rows at once ── */
+function toggleAllReps() {
+  allRepsExpanded = !allRepsExpanded;
+  document.querySelectorAll('tr.rep-group-row').forEach(tr => {
+    const { bu, conf: gconf, rep } = tr.dataset;
+    const btn = document.getElementById(`xrg-${bu}-${safe(gconf)}-${safe(rep)}`);
+    if (allRepsExpanded) {
+      document.querySelectorAll(`.case-row[data-bu="${bu}"][data-conf="${gconf}"][data-rep="${rep}"]`)
+        .forEach(ctr => { if (!ctr.classList.contains('search-hide') && active.has(ctr.dataset.conf)) ctr.classList.add('vis'); });
+      if (btn) btn.textContent = '-';
+    } else {
+      document.querySelectorAll(`.case-row[data-bu="${bu}"][data-conf="${gconf}"][data-rep="${rep}"]`)
+        .forEach(ctr => {
+          ctr.classList.remove('vis');
+          const ci = ctr.id.replace(`c-${bu}-`, '');
+          document.querySelectorAll(`.item-row[data-bu="${bu}"][data-ci="${ci}"]`).forEach(it => it.classList.remove('vis'));
+          const xc = document.getElementById(`xc-${bu}-${ci}`); if (xc) xc.textContent = '+';
+        });
+      if (btn) btn.textContent = '+';
+    }
+  });
+  const eb = document.getElementById('expand-rep-btn');
+  if (eb) eb.textContent = allRepsExpanded ? '－ 收合全部業務' : '＋ 展開全部業務';
+}
+
+function onSearch() {
+  searchQ = document.getElementById('search-input').value.toLowerCase().trim();
+  applySearch();
+  updateResultCount();
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  searchQ = '';
+  applySearch();
+  updateResultCount();
+}
+
+function applySearch() {
+  if (!searchQ) {
+    document.querySelectorAll('tr.case-row').forEach(tr => tr.classList.remove('search-hide'));
+    document.querySelectorAll('tr.item-row').forEach(tr => tr.classList.remove('search-hide'));
+    updateBUVisibility();
+    return;
+  }
+  document.querySelectorAll('tr.case-row').forEach(tr => {
+    const match = (tr.dataset.search || '').includes(searchQ);
+    if (match) {
+      tr.classList.remove('search-hide');
+      const { bu, conf: gconf, rep } = tr.dataset;
+      /* Auto-expand BU → conf group → rep group */
+      if (document.getElementById('xb-' + bu)?.textContent === '+') toggleBU(bu);
+      if (document.getElementById(`xcg-${bu}-${safe(gconf)}`)?.textContent === '+') toggleConf(bu, gconf);
+      if (document.getElementById(`xrg-${bu}-${safe(gconf)}-${safe(rep)}`)?.textContent === '+') toggleRep(bu, gconf, rep);
+      if (active.has(gconf)) tr.classList.add('vis');
+    } else {
+      tr.classList.add('search-hide');
+      tr.classList.remove('vis');
+      const bu = tr.dataset.bu;
+      const ci = tr.id.replace(`c-${bu}-`, '');
+      document.querySelectorAll(`.item-row[data-bu="${bu}"][data-ci="${ci}"]`).forEach(it => {
+        it.classList.add('search-hide');
+        it.classList.remove('vis');
+      });
+    }
+  });
+  updateBUVisibility();
+}
+
+function updateBUVisibility() {
+  BU_ORDER.forEach(bu => {
+    const hasVisible = [...document.querySelectorAll(`.case-row[data-bu="${bu}"]`)]
+      .some(tr => !tr.classList.contains('search-hide'));
+    const hide = !hasVisible && searchQ !== '';
+    document.getElementById('bu-' + bu)?.classList.toggle('bu-hidden', hide);
+    document.querySelector(`.sub-row[data-bu="${bu}"]`)?.classList.toggle('bu-hidden', hide);
+    document.querySelectorAll(`.conf-group-row[data-bu="${bu}"], .rep-group-row[data-bu="${bu}"]`)
+      .forEach(tr => tr.classList.toggle('bu-hidden', hide));
+  });
+}
+
+function updateResultCount() {
+  const total   = document.querySelectorAll('tr.case-row').length;
+  const visible = [...document.querySelectorAll('tr.case-row')].filter(tr => !tr.classList.contains('search-hide')).length;
+  const el = document.getElementById('result-count');
+  if (searchQ) el.textContent = `搜尋結果：${visible} / ${total} 筆`;
+  else el.textContent = `共 ${total} 筆銷售案`;
+}
+
+function applyFilter() {
+  /* ── Update BU header + subtotal cells ── */
+  BU_ORDER.forEach(bu => {
+    CONF_ORDER.forEach(c => {
+      const a = buConfAmt(bu, c), v = active.has(c) && a ? fmt(a) : '-', cl = a && active.has(c) ? 'num' : 'dim';
+      ['bc','bsc'].forEach(pfx => { const td = document.getElementById(`${pfx}-${bu}-${safe(c)}`); if (td) { td.textContent = v; td.className = cl; } });
+    });
+    const s = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    s(`bt-${bu}`, fmt(buTotalActive(bu)));
+    s(`bs-${bu}`, fmt(buTotalActive(bu)));
+
+    /* ── Update conf-group cells ── */
+    CONF_ORDER.forEach(gconf => {
+      CONF_ORDER.forEach(c => {
+        const a = cgAmt(bu, gconf, c), v = active.has(c) && a ? fmt(a) : '-', cl = a && active.has(c) ? 'num' : 'dim';
+        const td = document.getElementById(`cgc-${bu}-${safe(gconf)}-${safe(c)}`);
+        if (td) { td.textContent = v; td.className = cl; }
+      });
+      const tdT = document.getElementById(`cgt-${bu}-${safe(gconf)}`);
+      if (tdT) tdT.textContent = fmt(cgTotal(bu, gconf));
+
+      /* ── Update rep-group cells ── */
+      const repsSeen = new Set([...document.querySelectorAll(`.rep-group-row[data-bu="${bu}"][data-conf="${gconf}"]`)].map(tr => tr.dataset.rep));
+      repsSeen.forEach(rep => {
+        CONF_ORDER.forEach(c => {
+          const a = rgAmt(bu, gconf, rep, c), v = active.has(c) && a ? fmt(a) : '-', cl = a && active.has(c) ? 'num' : 'dim';
+          const td = document.getElementById(`rgc-${bu}-${safe(gconf)}-${safe(rep)}-${safe(c)}`);
+          if (td) { td.textContent = v; td.className = cl; }
+        });
+        const tdRT = document.getElementById(`rgt-${bu}-${safe(gconf)}-${safe(rep)}`);
+        if (tdRT) tdRT.textContent = fmt(rgTotal(bu, gconf, rep));
+      });
+    });
+
+    /* ── Update case cells ── */
+    (RAW[bu]||[]).filter(casePasses).forEach((cas, _) => {
+      const ci = (RAW[bu]||[]).indexOf(cas);
+      CONF_ORDER.forEach(c => {
+        const a = caseAmt(cas, c), td = document.getElementById(`cc-${bu}-${ci}-${safe(c)}`);
+        if (td) { td.textContent = active.has(c) && a ? fmt(a) : '-'; td.className = a && active.has(c) ? 'num' : 'dim'; }
+      });
+      const tdCT = document.getElementById(`ct-${bu}-${ci}`);
+      if (tdCT) tdCT.textContent = fmt(caseTotalActive(cas));
+    });
+  });
+
+  /* ── Grand total (table 1) ── */
+  CONF_ORDER.forEach(c => {
+    const td = document.getElementById(`gc-${safe(c)}`);
+    if (td) { td.textContent = active.has(c) && grandAmt(c) ? fmt(grandAmt(c)) : '-'; }
+  });
+  const tdGT = document.getElementById('gt');
+  if (tdGT) tdGT.textContent = fmt(grandTotalActive());
+
+  /* Table 2 is fully rebuilt by refresh() → buildRepTable(), no in-place update needed */
+
+  /* ── Toggle case visibility (only if rep group is open) ── */
+  document.querySelectorAll('tr.case-row').forEach(tr => {
+    const { bu, conf: gconf, rep } = tr.dataset;
+    const repOpen = document.getElementById(`xrg-${bu}-${safe(gconf)}-${safe(rep)}`)?.textContent === '-';
+    if (repOpen && active.has(gconf) && !tr.classList.contains('search-hide')) tr.classList.add('vis');
+    else tr.classList.remove('vis');
+  });
+
+  /* ── Toggle item visibility ── */
+  document.querySelectorAll('tr.item-row').forEach(tr => {
+    const { bu, ci, conf: c } = tr.dataset;
+    const caseOpen = document.getElementById(`xc-${bu}-${ci}`)?.textContent === '-';
+    caseOpen && active.has(c) ? tr.classList.add('vis') : tr.classList.remove('vis');
+  });
+}
+
+/* ════════════════════════════════════════════
+   REP SUMMARY TABLE (Table 2)
+════════════════════════════════════════════ */
+
+function buildRepTableHeader() {
+  const tr = document.getElementById('thead-row2');
+  tr.innerHTML = `<th class="left" style="width:34%">業務 / 客戶名稱 / 銷售案名稱</th>`
+    + `<th style="min-width:88px">預計結案日</th>`
+    + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
+    + `<th style="min-width:90px">總計</th>`;
+  const ths = tr.querySelectorAll('th');
+  CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; });
+}
+
+function buildRepTable() {
+  const tbody = document.getElementById('tbody2');
+  tbody.innerHTML = '';
+
+  /* Collect all filtered cases keyed by rep, preserving BU info */
+  const repMap = {};   // rep → [{cas, bu, ci}]
+  BU_ORDER.forEach(bu => {
+    (RAW[bu]||[]).filter(casePasses).forEach(cas => {
+      const ci  = (RAW[bu]||[]).indexOf(cas);
+      const rep = cas.rep || '(未指定)';
+      if (!repMap[rep]) repMap[rep] = [];
+      repMap[rep].push({ cas, bu, ci });
+    });
+  });
+
+  /* Sort reps alphabetically */
+  const reps = Object.keys(repMap).sort();
+
+  reps.forEach(rep => {
+    /* Sort cases: conf priority then date */
+    const cases = repMap[rep].sort((a, b) => {
+      const pa = CONF_ORDER.findIndex(c => a.cas.conf[c]);
+      const pb = CONF_ORDER.findIndex(c => b.cas.conf[c]);
+      if (pa !== pb) return pa - pb;
+      return (a.cas.date || '').localeCompare(b.cas.date || '');
+    });
+
+    /* Rep row */
+    const rTr = document.createElement('tr');
+    rTr.className = 'rep2-row';
+    rTr.id = `rs2-${safe(rep)}`;
+    rTr.onclick = () => toggleRep2(rep);
+    rTr.innerHTML = `<td><div class="bu-lbl"><span class="xbtn-g" id="xs2-${safe(rep)}">+</span>👤 ${rep}&nbsp;<span style="font-size:11px;font-weight:400;color:#555">(${cases.length} 案)</span></div></td>`
+      + emptyDateTd()
+      + CONF_ORDER.map(c => `<td class="num" id="rc2-${safe(rep)}-${safe(c)}">${active.has(c) && repAmt(rep,c) ? fmt(repAmt(rep,c)) : '-'}</td>`).join('')
+      + `<td class="num" id="rt2-${safe(rep)}">${fmt(repTotal(rep))}</td>`;
+    tbody.appendChild(rTr);
+
+    /* Case rows */
+    cases.forEach(({ cas, bu, ci }, idx) => {
+      const pc = primConf(cas);
+      const cTr = document.createElement('tr');
+      cTr.className = 'case2-row';
+      cTr.id = `c2-${safe(rep)}-${idx}`;
+      cTr.dataset.rep = rep;
+      cTr.dataset.ci2 = idx;
+      cTr.onclick = () => toggleCase2(rep, idx);
+      cTr.innerHTML = `<td><div class="case-lbl"><span class="xbtn2" id="xc2-${safe(rep)}-${idx}">+</span>${cas.cust}<span class="tag ${getTagCls(pc)}">${pc}</span><span style="font-size:10px;color:#999;margin-left:4px">[${bu}]</span></div>`
+        + `<div style="padding-left:32px;font-size:11px;color:#666;margin-top:2px">${cas.case}</div></td>`
+        + dateTd(cas.date)
+        + CONF_ORDER.map(c => {
+            const a = caseAmt(cas, c);
+            return `<td class="${a && active.has(c) ? 'num' : 'dim'}" id="cc2-${safe(rep)}-${idx}-${safe(c)}">${active.has(c) && a ? fmt(a) : '-'}</td>`;
+          }).join('')
+        + `<td class="num" id="ct2-${safe(rep)}-${idx}">${fmt(caseTotalActive(cas))}</td>`;
+      tbody.appendChild(cTr);
+
+      /* Item rows */
+      CONF_ORDER.forEach(c => {
+        (cas.conf[c] || []).forEach(item => {
+          const iTr = document.createElement('tr');
+          iTr.className = 'item2-row';
+          iTr.dataset.rep  = rep;
+          iTr.dataset.ci2  = idx;
+          iTr.dataset.conf = c;
+          const cc = getCtxtCls(c);
+          iTr.innerHTML = `<td><span class="${cc}" style="padding-left:44px">▸ ${item.name}</span></td>`
+            + emptyDateTd()
+            + CONF_ORDER.map(cc2 => {
+                if (cc2 === c) return `<td class="${item.amt && active.has(c) ? 'num' : 'dim'}">${active.has(c) ? fmt(item.amt) : '-'}</td>`;
+                return `<td class="dim">-</td>`;
+              }).join('')
+            + `<td class="num">${fmt(item.amt)}</td>`;
+          tbody.appendChild(iTr);
+        });
+      });
+    });
+  });
+
+  /* Grand total */
+  const gTr = document.createElement('tr');
+  gTr.className = 'grand-row';
+  gTr.innerHTML = `<td>業務總計</td>`
+    + emptyDateTd()
+    + CONF_ORDER.map(c => `<td class="num">${grandAmt(c) ? fmt(grandAmt(c)) : '-'}</td>`).join('')
+    + `<td class="num">${fmt(grandTotalActive())}</td>`;
+  tbody.appendChild(gTr);
+
+  /* Update rep count */
+  const el = document.getElementById('rep-result-count');
+  if (el) el.textContent = `共 ${reps.length} 位業務 / ${Object.values(repMap).reduce((s,v) => s+v.length, 0)} 筆銷售案`;
+}
+
+function toggleRep2(rep) {
+  const btn    = document.getElementById(`xs2-${safe(rep)}`);
+  const isOpen = btn.textContent === '-';
+  document.querySelectorAll(`.case2-row[data-rep="${rep}"]`).forEach(tr => {
+    isOpen ? tr.classList.remove('vis') : tr.classList.add('vis');
+  });
+  if (isOpen) {
+    document.querySelectorAll(`.item2-row[data-rep="${rep}"]`).forEach(tr => tr.classList.remove('vis'));
+    document.querySelectorAll(`[id^="xc2-${safe(rep)}-"]`).forEach(e => e.textContent = '+');
+  }
+  btn.textContent = isOpen ? '+' : '-';
+}
+
+function toggleCase2(rep, idx) {
+  const btn    = document.getElementById(`xc2-${safe(rep)}-${idx}`);
+  const isOpen = btn.textContent === '-';
+  document.querySelectorAll(`.item2-row[data-rep="${rep}"][data-ci2="${idx}"]`).forEach(tr => {
+    if (isOpen) tr.classList.remove('vis');
+    else if (active.has(tr.dataset.conf)) tr.classList.add('vis');
+  });
+  btn.textContent = isOpen ? '+' : '-';
+}
+
+function refresh() {
+  buildCards();
+  buildBar();
+  applyFilter();
+  buildRepTable();
+  buildDeptTable();
+  buildSupportBuTable();
+  buildSupportDeptTable();
+  buildAchieveSection();
+}
+
+/* ════════════════════════════════════════════
+   FILE UPLOAD
+════════════════════════════════════════════ */
+
+function handleFile(file) {
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xls', 'xlsx'].includes(ext)) {
+    showError('請上傳 .xls 或 .xlsx 格式的檔案。');
+    return;
+  }
+  fileName = file.name;
+  showLoading(true);
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const result = parseXLSData(e.target.result);
+      if (!result) { showLoading(false); showError('無法解析檔案，請確認格式正確。'); return; }
+      if (result.error) { showLoading(false); showError(result.error); return; }
+
+      RAW              = result.raw;
+      BU_ORDER         = result.buOrder;
+      CONF_ORDER       = result.confOrder;
+      DEPT_RAW         = result.deptRaw         || {};
+      DEPT_ORDER       = result.deptOrder        || [];
+      SUPPORT_BU_RAW   = result.supportBuRaw    || {};
+      SUPPORT_BU_ORDER = result.supportBuOrder  || [];
+      SUPPORT_DEPT_RAW   = result.supportDeptRaw   || {};
+      SUPPORT_DEPT_ORDER = result.supportDeptOrder || [];
+      active     = new Set(CONF_ORDER);
+      searchQ    = '';
+
+      /* Compute available quarters and reps from data */
+      const repSet = new Set(), qSet = new Set();
+      BU_ORDER.forEach(bu => (RAW[bu]||[]).forEach(cas => {
+        if (cas.rep) repSet.add(cas.rep);
+        const q = dateToQuarter(cas.date);
+        if (q) qSet.add(q);
+      }));
+      ALL_REPS       = [...repSet].sort();
+      ALL_QUARTERS   = [...qSet].sort();
+      ALL_SUPPORT_BUS = SUPPORT_BU_ORDER.slice();
+      activeQuarters = new Set(ALL_QUARTERS);
+      activeSalesSet = new Set(ALL_REPS);
+      activeSbuSet   = new Set(ALL_SUPPORT_BUS);
+
+      buildHeader(result.titleStr, result.reportDate);
+      buildFilters();
+      buildQuarterFilters();
+      buildSalesFilters();
+      buildSbuFilters();
+      buildLegend();
+      buildTableHeader();
+      buildDeptTableHeader();
+      buildSupportBuTableHeader();
+      buildSupportDeptTableHeader();
+      buildRepTableHeader();
+      buildCards();
+      buildBar();
+      buildTable();
+      buildDeptTable();
+      buildSupportBuTable();
+      buildSupportDeptTable();
+      buildRepTable();
+
+      const fromModal = document.getElementById('upl-modal').classList.contains('open');
+      if (fromModal) {
+        // Already in app: refresh data in-place, close modal
+        closeUploadModal();
+        showToast(`✅ 資料已更新：${fileName}`);
+      } else {
+        // First load from upload screen: switch to app view
+        document.getElementById('upload-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+      }
+      showLoading(false);
+      // 先存入 DB，存完後再計算達成率（確保 /api/achievement 能查到最新資料）
+      saveToBackend().then(() => buildAchieveSection());
+    } catch (err) {
+      showLoading(false);
+      const fromModal = document.getElementById('upl-modal').classList.contains('open');
+      if (fromModal) {
+        const errEl = document.getElementById('upl-modal-err');
+        errEl.textContent = '解析錯誤：' + err.message;
+        errEl.style.display = 'block';
+      } else {
+        showError('解析過程發生錯誤：' + err.message);
+      }
+      console.error(err);
+    }
+  };
+  reader.onerror = () => {
+    showLoading(false);
+    const fromModal = document.getElementById('upl-modal').classList.contains('open');
+    if (fromModal) {
+      const errEl = document.getElementById('upl-modal-err');
+      errEl.textContent = '讀取檔案失敗。';
+      errEl.style.display = 'block';
+    } else {
+      showError('讀取檔案失敗。');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function showError(msg) {
+  const el = document.getElementById('error-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function showLoading(yes) {
+  document.getElementById('loading').style.display = yes ? 'flex' : 'none';
+}
+
+function resetToUpload() {
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('upload-screen').style.display = 'flex';
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  searchQ = '';
+}
+
+/* ── Close dropdowns when clicking outside ── */
+document.addEventListener('click', e => {
+  if (!e.target.closest('.multi-select')) {
+    document.querySelectorAll('.ms-panel').forEach(p => p.classList.remove('open'));
+    document.querySelectorAll('.ms-trigger').forEach(t => t.classList.remove('open'));
+  }
+});
+
+/* ── File input events (upload screen) ── */
+document.getElementById('file-input').addEventListener('change', e => {
+  handleFile(e.target.files[0]);
+});
+
+/* ── File input events (upload modal) ── */
+document.getElementById('upl-file-input').addEventListener('change', e => {
+  handleFile(e.target.files[0]);
+});
+const uplDZ = document.getElementById('upl-drop-zone');
+uplDZ.addEventListener('dragover',  e => { e.preventDefault(); uplDZ.classList.add('dragover'); });
+uplDZ.addEventListener('dragleave', () => uplDZ.classList.remove('dragover'));
+uplDZ.addEventListener('drop', e => {
+  e.preventDefault();
+  uplDZ.classList.remove('dragover');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+/* ── Drag & drop ── */
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+/* ── Check SheetJS loaded ── */
+window.addEventListener('load', () => {
+  if (typeof XLSX === 'undefined') {
+    showError('⚠️ 無法載入 SheetJS 程式庫（需要網路連線）。請確認網路連線後重新整理頁面。');
+  }
+  checkBackend();
+});
+
+/* ════════════════════════════════════════════
+   BACKEND INTEGRATION
+════════════════════════════════════════════ */
+let BACKEND = false;       // true when Flask server is detected
+let compareSelIds = [];    // up to 2 upload IDs selected for comparison
+
+/* ── Detect backend, then auto-load latest history if available ── */
+async function checkBackend() {
+  try {
+    const r = await fetch('/api/ping', { signal: AbortSignal.timeout(800) });
+    if (r.ok) {
+      BACKEND = true;
+      document.getElementById('hist-btn').style.display   = '';
+      document.getElementById('stt-btn').style.display    = '';
+      document.getElementById('quota-btn').style.display  = '';
+      document.getElementById('order-btn').style.display  = '';
+      await loadLatestIfAvailable();   // ← try to auto-load; stays on upload screen if no history
+      loadHistoryBadge();
+    }
+  } catch(e) { /* standalone mode, no backend */ }
+}
+
+/* ── Auto-load the most recent history record on startup ── */
+async function loadLatestIfAvailable() {
+  try {
+    const r    = await fetch('/api/history');
+    const list = await r.json();
+    if (!list.length) return;   // no history → stay on upload screen
+    const latest = list[0];
+    showLoading(true);
+    const dr = await fetch(`/api/data/${latest.id}`);
+    const d  = await dr.json();
+    applyLoadedData(d);
+    document.getElementById('upload-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    showLoading(false);
+    showToast(`✅ 已自動載入最新記錄：${latest.filename}`, 3000);
+  } catch(e) {
+    showLoading(false);
+    // fail silently — upload screen remains visible
+  }
+}
+
+/* ── Shared: apply loaded data (from history) into app state + rebuild UI ── */
+function applyLoadedData(d) {
+  RAW      = d.raw;
+  BU_ORDER = d.buOrder;
+  fileName = d.filename;
+
+  CONF_ORDER = [
+    ...PREF_CONF_ORDER.filter(c => Object.values(RAW).flat().some(cas => cas.conf && cas.conf[c])),
+    ...[...new Set(Object.values(RAW).flat().flatMap(cas => Object.keys(cas.conf || {})))]
+        .filter(c => !PREF_CONF_ORDER.includes(c)).sort()
+  ];
+  active  = new Set(CONF_ORDER);
+  searchQ = '';
+
+  const repSet = new Set(), qSet = new Set(), deptSet = new Set();
+  BU_ORDER.forEach(bu => (RAW[bu]||[]).forEach(cas => {
+    if (cas.rep) repSet.add(cas.rep);
+    const q = dateToQuarter(cas.date);
+    if (q) qSet.add(q);
+    if (cas.dept) deptSet.add(cas.dept);
+  }));
+  ALL_REPS       = [...repSet].sort();
+  ALL_QUARTERS   = [...qSet].sort();
+  activeQuarters = new Set(ALL_QUARTERS);
+  activeSalesSet = new Set(ALL_REPS);
+
+  /* Rebuild DEPT_RAW / SUPPORT_BU_RAW / SUPPORT_DEPT_RAW from loaded cases */
+  DEPT_RAW         = {};
+  SUPPORT_BU_RAW   = {};
+  SUPPORT_DEPT_RAW = {};
+  const supportBuSet2   = new Set();
+  const supportDeptSet2 = new Set();
+  DEPT_ORDER = [...deptSet].sort();
+  BU_ORDER.forEach(bu => (RAW[bu]||[]).forEach(cas => {
+    /* ── 業務部門：case-level ── */
+    if (cas.dept) {
+      if (!DEPT_RAW[cas.dept]) DEPT_RAW[cas.dept] = [];
+      DEPT_RAW[cas.dept].push(cas);
+    }
+    /* ── 支援BU/支援部門：item-level（1案可跨多個支援維度） ── */
+    const itemSBu   = new Set();
+    const itemSDept = new Set();
+    Object.values(cas.conf || {}).forEach(items =>
+      (items || []).forEach(it => {
+        if (it.supportBu)   itemSBu.add(it.supportBu);
+        if (it.supportDept) itemSDept.add(it.supportDept);
+      })
+    );
+    itemSBu.forEach(sbu => {
+      supportBuSet2.add(sbu);
+      if (!SUPPORT_BU_RAW[sbu]) SUPPORT_BU_RAW[sbu] = [];
+      if (!SUPPORT_BU_RAW[sbu].includes(cas)) SUPPORT_BU_RAW[sbu].push(cas);
+    });
+    itemSDept.forEach(sdept => {
+      supportDeptSet2.add(sdept);
+      if (!SUPPORT_DEPT_RAW[sdept]) SUPPORT_DEPT_RAW[sdept] = [];
+      if (!SUPPORT_DEPT_RAW[sdept].includes(cas)) SUPPORT_DEPT_RAW[sdept].push(cas);
+    });
+  }));
+  SUPPORT_BU_ORDER   = [...supportBuSet2].sort();
+  SUPPORT_DEPT_ORDER = [...supportDeptSet2].sort();
+  ALL_SUPPORT_BUS    = SUPPORT_BU_ORDER.slice();
+  activeSbuSet       = new Set(ALL_SUPPORT_BUS);
+
+  document.getElementById('app-title').textContent = '銷售案 Forecast 彙整';
+  document.getElementById('app-subtitle').textContent =
+    `資料來源：${d.filename} ｜ 歷史記錄：${d.uploadedAt || ''}`;
+
+  buildFilters(); buildQuarterFilters(); buildSalesFilters(); buildSbuFilters();
+  buildLegend(); buildTableHeader(); buildDeptTableHeader(); buildSupportBuTableHeader(); buildSupportDeptTableHeader(); buildRepTableHeader();
+  buildCards(); buildBar(); buildTable(); buildDeptTable(); buildSupportBuTable(); buildSupportDeptTable(); buildRepTable();
+  buildAchieveSection();
+}
+
+/* ── Toast notification ── */
+function showToast(msg, duration=2400) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+/* ── Save current data to backend after upload ── */
+async function saveToBackend() {
+  if (!BACKEND) return;
+  try {
+    await fetch('/api/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw: RAW, buOrder: BU_ORDER, confOrder: CONF_ORDER, filename: fileName })
+    });
+    loadHistoryBadge();
+  } catch(e) { console.warn('saveToBackend failed', e); }
+}
+
+/* ── Load badge count ── */
+async function loadHistoryBadge() {
+  if (!BACKEND) return;
+  try {
+    const r = await fetch('/api/history');
+    const list = await r.json();
+    const badge = document.getElementById('hist-badge');
+    if (list.length > 0) {
+      badge.textContent = list.length;
+      badge.style.display = '';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+/* ════════════════════════════════════════════
+   HISTORY SIDEBAR
+════════════════════════════════════════════ */
+async function openHistory() {
+  document.getElementById('hist-overlay').classList.add('open');
+  document.getElementById('hist-sidebar').classList.add('open');
+  compareSelIds = [];
+  updateCompareBar();
+  await renderHistoryList();
+}
+
+function closeHistory() {
+  document.getElementById('hist-overlay').classList.remove('open');
+  document.getElementById('hist-sidebar').classList.remove('open');
+}
+
+async function renderHistoryList() {
+  const body = document.getElementById('hist-body');
+  body.innerHTML = '<div class="hist-empty">載入中…</div>';
+  try {
+    const r    = await fetch('/api/history');
+    const list = await r.json();
+    if (!list.length) { body.innerHTML = '<div class="hist-empty">尚無歷史記錄</div>'; return; }
+    const CONF_PREF = ['Base','ACP','Option-補救','Option','Maximum'];
+    const CONF_COL  = {'Base':'#4CAF50','ACP':'#2196F3','Option-補救':'#FF9800','Option':'#9C27B0','Maximum':'#00897B'};
+    body.innerHTML = '';
+    list.forEach(rec => {
+      const card = document.createElement('div');
+      card.className = 'hist-card';
+      card.id = 'hcard-' + rec.id;
+      const totalAmt = Object.values(rec.conf_summary).reduce((s,v)=>s+v,0);
+      const barSegs  = CONF_PREF.filter(c => rec.conf_summary[c])
+        .map(c => {
+          const pct = totalAmt ? (rec.conf_summary[c]/totalAmt*100).toFixed(1) : 0;
+          return `<div style="flex:${pct};background:${CONF_COL[c]||'#607D8B'};min-width:0" title="${c}: ${fmtM(rec.conf_summary[c])}"></div>`;
+        }).join('');
+      card.innerHTML = `
+        <div class="hist-card-top">
+          <div class="hist-date">${rec.uploaded_at}</div>
+          <div><span class="tag-base" style="font-size:10px;padding:1px 6px;border-radius:8px">${rec.case_count} 案</span></div>
+        </div>
+        <div class="hist-filename">${rec.filename}</div>
+        <div class="hist-meta">BU：${rec.bu_names || '-'}</div>
+        <div class="hist-conf-bar">${barSegs||'<div style="flex:1;background:#eee"></div>'}</div>
+        <div class="hist-actions">
+          <button class="hbtn hbtn-load" onclick="loadHistRecord(${rec.id})">📂 載入</button>
+          <button class="hbtn hbtn-cmp" id="hcmp-${rec.id}" onclick="toggleCompareSel(${rec.id})">⚖ 比較</button>
+          <button class="hbtn hbtn-del" onclick="deleteHistRecord(${rec.id})">🗑 刪除</button>
+        </div>`;
+      body.appendChild(card);
+    });
+  } catch(e) { body.innerHTML = '<div class="hist-empty">載入失敗</div>'; }
+}
+
+function toggleCompareSel(id) {
+  const idx = compareSelIds.indexOf(id);
+  if (idx >= 0) {
+    compareSelIds.splice(idx, 1);
+  } else {
+    if (compareSelIds.length >= 2) {
+      const old = compareSelIds.shift();
+      document.getElementById('hcmp-' + old)?.classList.remove('active');
+      document.getElementById('hcard-' + old)?.classList.remove('compare-sel');
+    }
+    compareSelIds.push(id);
+  }
+  document.getElementById('hcmp-' + id)?.classList.toggle('active', compareSelIds.includes(id));
+  document.getElementById('hcard-' + id)?.classList.toggle('compare-sel', compareSelIds.includes(id));
+  updateCompareBar();
+}
+
+function updateCompareBar() {
+  const bar  = document.getElementById('hist-compare-bar');
+  const info = document.getElementById('hist-compare-info');
+  const btn  = document.getElementById('hist-compare-go');
+  if (compareSelIds.length === 0) {
+    bar.classList.remove('vis');
+  } else {
+    bar.classList.add('vis');
+    if (compareSelIds.length === 1) {
+      info.textContent = '已選 1 / 2 筆，請再選一筆進行比較';
+      btn.disabled = true;
+    } else {
+      info.textContent = '已選 2 筆，點擊「開始比較」查看差異';
+      btn.disabled = false;
+    }
+  }
+}
+
+async function loadHistRecord(id) {
+  closeHistory();
+  showLoading(true);
+  try {
+    const r = await fetch(`/api/data/${id}`);
+    const d = await r.json();
+    applyLoadedData(d);
+    document.getElementById('upload-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    showToast(`✅ 已載入歷史記錄：${d.filename}`);
+  } catch(e) { showToast('❌ 載入失敗'); }
+  showLoading(false);
+}
+
+/* ── Upload modal (lightweight overlay) ── */
+function openUploadModal() {
+  document.getElementById('upl-modal-err').style.display = 'none';
+  document.getElementById('upl-file-input').value = '';
+  document.getElementById('upl-modal').classList.add('open');
+}
+function closeUploadModal() {
+  document.getElementById('upl-modal').classList.remove('open');
+}
+
+async function deleteHistRecord(id) {
+  if (!confirm('確定要刪除這筆歷史記錄嗎？')) return;
+  try {
+    await fetch(`/api/upload/${id}`, { method: 'DELETE' });
+    showToast('已刪除');
+    loadHistoryBadge();
+    renderHistoryList();
+    // Clear from compare selection if present
+    const idx = compareSelIds.indexOf(id);
+    if (idx >= 0) { compareSelIds.splice(idx,1); updateCompareBar(); }
+  } catch(e) { showToast('❌ 刪除失敗'); }
+}
+
+/* ════════════════════════════════════════════
+   COMPARE MODAL
+════════════════════════════════════════════ */
+async function runCompare() {
+  if (compareSelIds.length < 2) return;
+  const [id1, id2] = compareSelIds;   // older first → sort by id (smaller = older)
+  const sorted = [Math.min(id1,id2), Math.max(id1,id2)];
+  closeHistory();
+  showLoading(true);
+  try {
+    const [cmpR, trendR] = await Promise.all([
+      fetch(`/api/compare?id1=${sorted[0]}&id2=${sorted[1]}`),
+      fetch('/api/trend')
+    ]);
+    const cmp   = await cmpR.json();
+    const trend = await trendR.json();
+    renderCompare(cmp, trend);
+    document.getElementById('cmp-modal').classList.add('open');
+  } catch(e) { showToast('❌ 比較資料載入失敗'); }
+  showLoading(false);
+}
+
+function closeCompare() {
+  document.getElementById('cmp-modal').classList.remove('open');
+}
+
+const CMP_CONF_COL = {'Base':'#4CAF50','ACP':'#2196F3','Option-補救':'#FF9800','Option':'#9C27B0','Maximum':'#00897B'};
+
+function renderCompare(cmp, trend) {
+  /* VS cards */
+  const vs = document.getElementById('cmp-vs');
+  vs.innerHTML = `
+    <div class="cmp-vs-card">
+      <div class="cmp-vs-label">⬅ 比較基準（較舊）</div>
+      <div class="cmp-vs-name">${cmp.info1.filename||'-'}</div>
+      <div class="cmp-vs-meta">${cmp.info1.uploaded_at||''} ｜ ${cmp.info1.case_count||0} 案</div>
+    </div>
+    <div style="align-self:center;font-size:22px;color:#888">➜</div>
+    <div class="cmp-vs-card" style="border-color:#2d5ea8">
+      <div class="cmp-vs-label">➡ 最新版本</div>
+      <div class="cmp-vs-name">${cmp.info2.filename||'-'}</div>
+      <div class="cmp-vs-meta">${cmp.info2.uploaded_at||''} ｜ ${cmp.info2.case_count||0} 案</div>
+    </div>`;
+
+  /* Conf delta cards */
+  const grid = document.getElementById('cmp-conf-grid');
+  grid.innerHTML = '';
+  (cmp.conf_delta||[]).forEach(cd => {
+    const col   = CMP_CONF_COL[cd.conf] || '#607D8B';
+    const delta = cd.delta;
+    const dcls  = delta > 0 ? 'delta-pos' : delta < 0 ? 'delta-neg' : 'delta-zero';
+    const dsign = delta > 0 ? '+' : '';
+    const card  = document.createElement('div');
+    card.className = 'cmp-conf-card';
+    card.style.borderTopColor = col;
+    card.innerHTML = `
+      <div class="cmp-conf-name">${cd.conf}</div>
+      <div class="cmp-conf-vals">前：${fmtFull(cd.before)} → 後：${fmtFull(cd.after)}</div>
+      <div class="cmp-conf-delta ${dcls}">${dsign}${fmtFull(delta)}</div>`;
+    grid.appendChild(card);
+  });
+
+  /* Trend SVG */
+  renderTrendSVG(trend);
+
+  /* Tab counts */
+  document.getElementById('tab-new-cnt').textContent = cmp.new_count > 0 ? `(${cmp.new_count})` : '';
+  document.getElementById('tab-del-cnt').textContent = cmp.removed_count > 0 ? `(${cmp.removed_count})` : '';
+  document.getElementById('tab-chg-cnt').textContent = cmp.changed_count > 0 ? `(${cmp.changed_count})` : '';
+
+  /* Tab 0: New cases */
+  document.getElementById('cmp-tab-0').innerHTML = buildCmpCaseTable(cmp.new_cases, 'new');
+
+  /* Tab 1: Removed cases */
+  document.getElementById('cmp-tab-1').innerHTML = buildCmpCaseTable(cmp.removed_cases, 'del');
+
+  /* Tab 2: Changed cases */
+  document.getElementById('cmp-tab-2').innerHTML = buildCmpChangedTable(cmp.changed_cases);
+
+  /* Reset tabs */
+  cmpTab(0);
+}
+
+function buildCmpCaseTable(cases, type) {
+  if (!cases || !cases.length) return '<div style="padding:20px;text-align:center;color:#aaa">無資料</div>';
+  const tag  = type === 'new' ? '<span class="tag-new">新增</span>' : '<span class="tag-del">移除</span>';
+  const rows = cases.map(c =>
+    `<tr><td>${tag}</td><td>${c.bu||''}</td><td>${c.cust||''}</td>
+     <td>${c.case||''}</td><td>${c.rep||''}</td>
+     <td class="r">${fmtFull(c.total)}</td><td>${c.close_date||''}</td></tr>`
+  ).join('');
+  return `<table class="cmp-table"><thead><tr>
+    <th></th><th>BU</th><th>客戶</th><th>銷售案名稱</th><th>業務</th><th class="r">金額</th><th>結案日</th>
+  </tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function buildCmpChangedTable(cases) {
+  if (!cases || !cases.length) return '<div style="padding:20px;text-align:center;color:#aaa">無資料</div>';
+
+  const CONF_RANK = {'Base':1,'ACP':2,'Option-補救':3,'Option':4,'Maximum':5};
+  const CONF_TAG  = {'Base':'tag-base','ACP':'tag-acp','Option-補救':'tag-fix','Option':'tag-opt','Maximum':'tag-max'};
+
+  const blocks = cases.map(c => {
+    const dSign = c.total_delta > 0 ? '+' : '';
+    const dcls  = c.total_delta > 0 ? 'delta-pos' : c.total_delta < 0 ? 'delta-neg' : 'delta-zero';
+    const rows  = [];
+
+    // ── 1. 📅 結案日 ──
+    if (c.close_date_before !== c.close_date_after) {
+      const d1   = new Date((c.close_date_before||'').replace(/\//g,'-'));
+      const d2   = new Date((c.close_date_after ||'').replace(/\//g,'-'));
+      const diff = (!isNaN(d1) && !isNaN(d2)) ? Math.round((d2-d1)/86400000) : null;
+      const diffStr = diff !== null ? (diff > 0 ? `+${diff} 天` : `${diff} 天`) : '';
+      const diffCls = diff !== null ? (diff > 0 ? 'delta-neg' : diff < 0 ? 'delta-pos' : '') : '';
+      rows.push(`<tr class="cmp-det-row">
+        <td>📅 結案日</td>
+        <td>${c.close_date_before||'-'}</td>
+        <td>${c.close_date_after ||'-'}</td>
+        <td class="r ${diffCls}">${diffStr}</td>
+      </tr>`);
+    }
+
+    // ── 2. 👤 業務 ──
+    if ((c.rep_before||'') !== (c.rep_after||'')) {
+      rows.push(`<tr class="cmp-det-row">
+        <td>👤 業務</td>
+        <td>${c.rep_before||'-'}</td>
+        <td>${c.rep_after ||'-'}</td>
+        <td class="r" style="color:#999">異動</td>
+      </tr>`);
+    }
+
+    // ── 3. 🎯 信心度 ──
+    const pb = c.prim_conf_before, pa = c.prim_conf_after;
+    if (pb && pa && pb !== pa) {
+      const rb    = CONF_RANK[pb]||99, ra = CONF_RANK[pa]||99;
+      const label = ra < rb ? '⬆ 調升' : ra > rb ? '⬇ 調降' : '異動';
+      const lcls  = ra < rb ? 'delta-pos' : ra > rb ? 'delta-neg' : '';
+      rows.push(`<tr class="cmp-det-row">
+        <td>🎯 信心度</td>
+        <td><span class="tag ${CONF_TAG[pb]||'tag-opt'}">${pb}</span></td>
+        <td><span class="tag ${CONF_TAG[pa]||'tag-opt'}">${pa}</span></td>
+        <td class="r ${lcls}">${label}</td>
+      </tr>`);
+    }
+
+    // ── 4. 💰 金額（整體前後總額） ──
+    if (Math.abs(c.total_delta) > 0.01) {
+      const ds  = c.total_delta > 0 ? '+' : '';
+      const dcl = c.total_delta > 0 ? 'delta-pos' : c.total_delta < 0 ? 'delta-neg' : '';
+      rows.push(`<tr class="cmp-det-row">
+        <td>💰 金額</td>
+        <td>${fmtFull(c.total_before)}</td>
+        <td>${fmtFull(c.total_after)}</td>
+        <td class="r ${dcl}">${ds}${fmtFull(c.total_delta)}</td>
+      </tr>`);
+    }
+
+    if (!rows.length) return '';
+
+    return `<div class="cmp-case-block">
+      <div class="cmp-case-header">
+        <div class="cmp-case-meta">
+          <span class="cmp-case-bu">${c.bu||''}</span>
+          <span class="cmp-case-cust">${c.cust||''}</span>
+          <span class="cmp-case-name" title="${c.case||''}">${c.case||''}</span>
+          <span class="cmp-case-rep">／${c.rep||''}</span>
+        </div>
+        <div class="cmp-case-delta ${dcls}">${dSign}${fmtFull(c.total_delta)}</div>
+      </div>
+      <table class="cmp-det-table">
+        <colgroup><col class="c1"><col class="c2"><col class="c3"><col class="c4"></colgroup>
+        <thead><tr>
+          <th>異動類型</th>
+          <th>異動前</th>
+          <th>異動後</th>
+          <th class="r">差異</th>
+        </tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+
+  return blocks || '<div style="padding:20px;text-align:center;color:#aaa">無資料</div>';
+}
+
+function renderTrendSVG(trend) {
+  const el = document.getElementById('trend-svg');
+  if (!trend || trend.length < 2) { el.innerHTML = '<div style="padding:14px;color:#aaa;font-size:12px">歷史記錄不足，無法繪製趨勢</div>'; return; }
+  const CONF_PREF = ['Base','ACP','Option-補救','Option','Maximum'];
+  const confs     = [...new Set(trend.flatMap(t => Object.keys(t.conf_summary)))];
+  const ordConfs  = [...CONF_PREF.filter(c=>confs.includes(c)), ...confs.filter(c=>!CONF_PREF.includes(c))];
+  const W = Math.max(500, trend.length * 80), H = 160, PL=10, PR=10, PT=14, PB=30;
+  const maxV = Math.max(...trend.flatMap(t => ordConfs.map(c => (t.conf_summary[c]||0)/1e6)), 1);
+  const xScale = i => PL + i * (W - PL - PR) / (trend.length - 1);
+  const yScale = v => PT + (H - PT - PB) * (1 - v / maxV);
+  let paths = ordConfs.map(c => {
+    const col = CMP_CONF_COL[c] || '#607D8B';
+    const pts = trend.map((t,i) => `${i===0?'M':'L'}${xScale(i).toFixed(1)},${yScale((t.conf_summary[c]||0)/1e6).toFixed(1)}`).join(' ');
+    return `<path d="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>
+      ${trend.map((t,i)=>`<circle cx="${xScale(i).toFixed(1)}" cy="${yScale((t.conf_summary[c]||0)/1e6).toFixed(1)}" r="3" fill="${col}"><title>${c}: ${fmtFull(t.conf_summary[c]||0)}\n${t.uploaded_at}</title></circle>`).join('')}`;
+  }).join('');
+  const xLabels = trend.map((t,i) => `<text x="${xScale(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9" fill="#888">${(t.uploaded_at||'').slice(5,10)}</text>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" style="display:block">${paths}${xLabels}</svg>`;
+}
+
+function cmpTab(idx) {
+  document.querySelectorAll('.cmp-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.cmp-tab-content').forEach((c,i) => c.classList.toggle('active', i===idx));
+}
+
+function fmtFull(n) {
+  if (!n) return '-';
+  return Math.abs(n) >= 1e6 ? (n/1e6).toFixed(2)+'M' : n.toLocaleString('zh-TW');
+}
+
+/* ════════════════════════════════════════════
+   SETTINGS MODAL
+════════════════════════════════════════════ */
+async function openSettings() {
+  try {
+    const r = await fetch('/api/settings');
+    const s = await r.json();
+    document.getElementById('stt-max-history').value = s.max_history || 12;
+  } catch(e) {}
+  document.getElementById('stt-modal').classList.add('open');
+}
+
+function closeSettings() {
+  document.getElementById('stt-modal').classList.remove('open');
+}
+
+async function saveSettings() {
+  const val = parseInt(document.getElementById('stt-max-history').value);
+  if (!val || val < 1) { showToast('❌ 請輸入有效數字'); return; }
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ max_history: val })
+    });
+    closeSettings();
+    showToast(`✅ 設定已儲存（最多保留 ${val} 筆）`);
+  } catch(e) { showToast('❌ 儲存失敗'); }
+}
+
+/* ════════════════════════════════════════════
+   QUOTA MODAL
+════════════════════════════════════════════ */
+let currentQuotaDimType = 'sales_bu';
+
+function openQuota() {
+  buildYearSel('quota-year-sel');
+  document.getElementById('quota-modal').classList.add('open');
+  loadQuotas();
+}
+function closeQuota() { document.getElementById('quota-modal').classList.remove('open'); }
+
+function quotaTab(dimType) {
+  currentQuotaDimType = dimType;
+  const types = ['sales_bu','sales_dept','support_bu','support_dept'];
+  document.querySelectorAll('#quota-modal .mgmt-tab').forEach((t,i) => {
+    t.classList.toggle('active', types[i] === dimType);
+  });
+  loadQuotas();
+}
+
+function buildYearSel(selId) {
+  const sel = document.getElementById(selId);
+  if (sel.options.length > 0) return;
+  const cur = new Date().getFullYear();
+  for (let y = cur - 2; y <= cur + 3; y++) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === cur) o.selected = true;
+    sel.appendChild(o);
+  }
+}
+
+async function loadQuotas() {
+  const year = document.getElementById('quota-year-sel').value;
+  const resp = await fetch(`/api/quotas?year=${year}`);
+  const data = await resp.json();
+  const filtered = data.filter(r => r.dim_type === currentQuotaDimType);
+  const tbody = document.getElementById('quota-tbody');
+  tbody.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="4" style="text-align:center;color:#bbb;padding:20px">尚無資料</td></tr>`
+    : filtered.map(r => `<tr>
+      <td>${r.dim_name}</td>
+      <td>${Number(r.quota).toLocaleString('zh-TW')}</td>
+      <td style="color:#888;font-size:11px">${r.updated_at||''}</td>
+      <td>
+        <button class="mgmt-act-btn mgmt-del-btn" onclick="deleteQuota(${r.id})">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function addQuota() {
+  const name = document.getElementById('quota-name-input').value.trim();
+  const amt  = parseFloat(document.getElementById('quota-amt-input').value);
+  const year = parseInt(document.getElementById('quota-year-sel').value);
+  if (!name || isNaN(amt)) { alert('請輸入名稱和金額'); return; }
+  await fetch('/api/quotas', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ year, dim_type: currentQuotaDimType, dim_name: name, quota: amt })
+  });
+  document.getElementById('quota-name-input').value = '';
+  document.getElementById('quota-amt-input').value  = '';
+  loadQuotas();
+  buildAchieveSection();   // 新增/刪除後立即刷新達成率區塊
+}
+
+async function deleteQuota(id) {
+  if (!confirm('確定刪除？')) return;
+  await fetch(`/api/quotas/${id}`, { method: 'DELETE' });
+  loadQuotas();
+  buildAchieveSection();
+}
+
+/* ════════════════════════════════════════════
+   ORDER MODAL
+════════════════════════════════════════════ */
+let currentOrderDimType = 'sales_bu';
+
+function openOrder() {
+  buildYearSel('order-year-sel');
+  document.getElementById('order-modal').classList.add('open');
+  loadOrders();
+}
+function closeOrder() { document.getElementById('order-modal').classList.remove('open'); }
+
+function orderTab(dimType) {
+  currentOrderDimType = dimType;
+  const types = ['sales_bu','sales_dept','support_bu','support_dept'];
+  document.querySelectorAll('#order-modal .mgmt-tab').forEach((t,i) => {
+    t.classList.toggle('active', types[i] === dimType);
+  });
+  loadOrders();
+}
+
+async function loadOrders() {
+  const year = document.getElementById('order-year-sel').value;
+  const resp = await fetch(`/api/orders?year=${year}`);
+  const data = await resp.json();
+  const filtered = data.filter(r => r.dim_type === currentOrderDimType);
+  const tbody = document.getElementById('order-tbody');
+  tbody.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="4" style="text-align:center;color:#bbb;padding:20px">尚無資料</td></tr>`
+    : filtered.map(r => `<tr>
+      <td>${r.dim_name}</td>
+      <td>${Number(r.amount).toLocaleString('zh-TW')}</td>
+      <td style="color:#888;font-size:11px">${r.updated_at||''}</td>
+      <td>
+        <button class="mgmt-act-btn mgmt-del-btn" onclick="deleteOrder(${r.id})">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function addOrder() {
+  const name = document.getElementById('order-name-input').value.trim();
+  const amt  = parseFloat(document.getElementById('order-amt-input').value);
+  const year = parseInt(document.getElementById('order-year-sel').value);
+  if (!name || isNaN(amt)) { alert('請輸入名稱和金額'); return; }
+  await fetch('/api/orders', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ year, dim_type: currentOrderDimType, dim_name: name, amount: amt })
+  });
+  document.getElementById('order-name-input').value = '';
+  document.getElementById('order-amt-input').value  = '';
+  loadOrders();
+  buildAchieveSection();   // 新增/刪除後立即刷新達成率區塊
+}
+
+async function deleteOrder(id) {
+  if (!confirm('確定刪除？')) return;
+  await fetch(`/api/orders/${id}`, { method: 'DELETE' });
+  loadOrders();
+  buildAchieveSection();
+}
+</script>
+</body>
+</html>

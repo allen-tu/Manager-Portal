@@ -1,0 +1,28 @@
+### 資料庫（含客戶資料，勿上傳）
+*.db
+*.sqlite
+*.sqlite3
+
+### 原始資料檔
+*.xls
+*.xlsx
+*.csv
+
+### 備份檔 / 舊版本
+*_backup*.html
+SPSBU_Forecast_202603.html
+serve.py
+sales.db
+
+### OS / 編輯器
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+__pycache__/
+*.pyc
+
+### 開發環境
+.env
+venv/
+.venv/
