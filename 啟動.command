@@ -33,8 +33,8 @@ echo ""
 
 # 安裝必要套件（第一次需要網路，之後離線可用）
 echo "檢查並安裝必要套件..."
-python3 -m pip install flask --quiet --disable-pip-version-check 2>/dev/null || \
-python3 -m pip install flask --quiet 2>/dev/null || \
+python3 -m pip install -r requirements.txt --quiet --disable-pip-version-check 2>/dev/null || \
+python3 -m pip install -r requirements.txt --quiet 2>/dev/null || \
 echo "[警告] 套件安裝失敗，嘗試繼續..."
 
 echo ""

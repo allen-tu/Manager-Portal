@@ -728,26 +728,86 @@ def orders_upload():
     if not f.filename:
         return jsonify({'error': '檔名為空'}), 400
 
-    try:
-        import xlrd
-    except ImportError:
-        return jsonify({'error': '伺服器缺少 xlrd 套件，請執行 pip install xlrd==1.2.0'}), 500
+    # ── 讀取 Excel（支援 .xls 與 .xlsx）──────────────────────────────
+    file_bytes = f.read()
+    fname_lower = f.filename.lower()
 
-    try:
-        data = f.read()
-        wb   = xlrd.open_workbook(file_contents=data)
-        ws   = wb.sheets()[0]
-    except Exception as e:
-        return jsonify({'error': f'無法開啟 Excel 檔案：{e}'}), 400
-
-    # 偵測標題列：若 row[0] 含有「CN005」或「合約」等關鍵字則 row 1 為欄名
-    def cell_str(row, col):
+    if fname_lower.endswith('.xlsx'):
         try:
-            v = ws.cell_value(row, col)
-            return str(v).strip() if v is not None else ''
-        except Exception:
-            return ''
+            import openpyxl
+        except ImportError:
+            return jsonify({'error': '伺服器缺少 openpyxl 套件，請執行 pip install openpyxl'}), 500
+        try:
+            wb_px = openpyxl.load_workbook(io.BytesIO(file_bytes), read_only=True, data_only=True)
+            ws_px = wb_px.active
+            _rows = [[c.value for c in row] for row in ws_px.iter_rows()]
+            wb_px.close()
+        except Exception as e:
+            return jsonify({'error': f'無法開啟 Excel 檔案：{e}'}), 400
 
+        def cell_str(row, col_idx):
+            try:
+                v = _rows[row][col_idx]
+                return str(v).strip() if v is not None else ''
+            except Exception:
+                return ''
+
+        def cell_date(row, c_name):
+            if c_name not in col:
+                return ''
+            try:
+                v = _rows[row][col[c_name]]
+                if v is None:
+                    return ''
+                if hasattr(v, 'year'):           # datetime / date object
+                    return f'{v.year:04d}/{v.month:02d}/{v.day:02d}'
+                s = str(v).strip()
+                if len(s) >= 8 and ('/' in s or '-' in s):
+                    return s[:10].replace('-', '/')
+                return ''
+            except Exception:
+                return ''
+
+        nrows = len(_rows)
+        ncols = len(_rows[0]) if _rows else 0
+
+    else:  # .xls
+        try:
+            import xlrd
+        except ImportError:
+            return jsonify({'error': '伺服器缺少 xlrd 套件，請執行 pip install xlrd==1.2.0'}), 500
+        try:
+            wb_xl = xlrd.open_workbook(file_contents=file_bytes)
+            ws_xl = wb_xl.sheets()[0]
+        except Exception as e:
+            return jsonify({'error': f'無法開啟 Excel 檔案：{e}'}), 400
+
+        def cell_str(row, col_idx):
+            try:
+                v = ws_xl.cell_value(row, col_idx)
+                return str(v).strip() if v is not None else ''
+            except Exception:
+                return ''
+
+        def cell_date(row, c_name):
+            if c_name not in col:
+                return ''
+            try:
+                cell = ws_xl.cell(row, col[c_name])
+                if cell.ctype == xlrd.XL_CELL_DATE:
+                    t = xlrd.xldate_as_tuple(cell.value, wb_xl.datemode)
+                    return f'{t[0]:04d}/{t[1]:02d}/{t[2]:02d}'
+                v = str(cell.value).strip()
+                if len(v) >= 8 and ('/' in v or '-' in v):
+                    return v[:10].replace('-', '/')
+                return ''
+            except Exception:
+                return ''
+
+        nrows = ws_xl.nrows
+        ncols = ws_xl.ncols
+
+    # ── 偵測標題列 ────────────────────────────────────────────────────
     first_cell = cell_str(0, 0)
     if any(k in first_cell for k in ('CN', 'SFM', '每月', '合約', '訂單')):
         header_row = 1
@@ -758,7 +818,7 @@ def orders_upload():
 
     # 建立欄名→index 對照
     col = {}
-    for ci in range(ws.ncols):
+    for ci in range(ncols):
         h = cell_str(header_row, ci)
         if h:
             col[h] = ci
@@ -773,31 +833,18 @@ def orders_upload():
         if c_name not in col:
             return 0.0
         try:
-            v = ws.cell_value(row, col[c_name])
-            return float(v) if v != '' else 0.0
+            if fname_lower.endswith('.xlsx'):
+                v = _rows[row][col[c_name]]
+            else:
+                v = ws_xl.cell_value(row, col[c_name])
+            return float(v) if v not in ('', None) else 0.0
         except Exception:
             return 0.0
-
-    def cell_date(row, c_name):
-        """回傳 YYYY/MM/DD 字串；支援 Excel serial 與字串格式"""
-        if c_name not in col:
-            return ''
-        try:
-            cell = ws.cell(row, col[c_name])
-            if cell.ctype == xlrd.XL_CELL_DATE:
-                t = xlrd.xldate_as_tuple(cell.value, wb.datemode)
-                return f'{t[0]:04d}/{t[1]:02d}/{t[2]:02d}'
-            v = str(cell.value).strip()
-            if len(v) >= 8 and ('/' in v or '-' in v):
-                return v[:10].replace('-', '/')
-            return ''
-        except Exception:
-            return ''
 
     now  = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     records = []
 
-    for r in range(data_start, ws.nrows):
+    for r in range(data_start, nrows):
         # 跳過空白列（以承辦BU 為主要判斷欄）
         biz_bu = cell_str(r, col.get('最新合約承辦BU', -1)) if '最新合約承辦BU' in col else ''
         if not biz_bu:

@@ -18,7 +18,7 @@ if errorlevel 1 (
 
 :: 安裝必要套件（第一次執行需要網路，之後不需要）
 echo 檢查並安裝必要套件...
-pip install flask --quiet --disable-pip-version-check
+pip install -r requirements.txt --quiet --disable-pip-version-check
 if errorlevel 1 (
     echo [警告] 套件安裝可能失敗，嘗試繼續啟動...
 )
