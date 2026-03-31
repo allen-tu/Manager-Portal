@@ -1832,17 +1832,26 @@ function buildBar() {
   const buses  = BU_ORDER.filter(bu => RAW[bu] && RAW[bu].length);
   const maxT   = Math.max(...buses.map(bu => CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + buConfAmt(bu, c), 0)), 1);
 
-  // 從 _lastAchieveData 取得業務BU Quota
+  // 從 _lastAchieveData 取得業務BU Quota 與 Order
   const quotaMap = {};
+  const orderMap = {};
   if (_lastAchieveData && _lastAchieveData.quotas) {
     _lastAchieveData.quotas.forEach(r => {
       if (r.dim_type === 'sales_bu' && r.quota) quotaMap[r.dim_name] = r.quota;
+    });
+  }
+  if (_lastAchieveData && _lastAchieveData.order_map && _lastAchieveData.order_map['sales_bu']) {
+    Object.entries(_lastAchieveData.order_map['sales_bu']).forEach(([name, amt]) => {
+      orderMap[name] = amt || 0;
     });
   }
 
   buses.forEach(bu => {
     const visT  = CONF_ORDER.filter(c => active.has(c)).reduce((s, c) => s + buConfAmt(bu, c), 0);
     const quota = quotaMap[bu] || 0;
+    const order = orderMap[bu] || 0;
+    // 有 Order 時，尺標位置 = Quota - Order（銷售案還需達成的部分）
+    const tickTarget = quota > 0 ? Math.max(quota - order, 0) : 0;
 
     let segs = '';
     CONF_ORDER.forEach(c => {
@@ -1853,17 +1862,20 @@ function buildBar() {
       segs += `<div class="bar-seg ${getCls(c)}" style="width:${pct}%;background:${getColor(c)}" title="${c}: ${fmt(a)}">${fmtM(a)}</div>`;
     });
 
-    // Quota 刻度線
+    // Quota 刻度線（位置 = Quota - Order，顏色依銷售案金額是否已超越此目標）
     let tickHtml = '';
     if (quota > 0) {
-      const exceeded   = visT >= quota;
-      const tickColor  = exceeded ? '#4CAF50' : '#e53935';
-      if (quota <= maxT) {
-        const tickPct = (quota / maxT * 100).toFixed(2);
-        tickHtml = `<div class="bar-quota-tick" style="left:${tickPct}%;background:${tickColor};color:${tickColor}" title="Quota: ${fmt(quota)}"></div>`;
+      const exceeded  = visT >= tickTarget;
+      const tickColor = exceeded ? '#4CAF50' : '#e53935';
+      const tipText   = order > 0
+        ? `目標剩餘：${fmt(tickTarget)}（Quota ${fmt(quota)} - 訂單 ${fmt(order)}）`
+        : `Quota：${fmt(quota)}`;
+      if (tickTarget <= maxT) {
+        const tickPct = (tickTarget / maxT * 100).toFixed(2);
+        tickHtml = `<div class="bar-quota-tick" style="left:${tickPct}%;background:${tickColor};color:${tickColor}" title="${tipText}"></div>`;
       } else {
-        // Quota 超出圖表右側：刻度貼右邊 + 紅色箭頭
-        tickHtml = `<div class="bar-quota-tick" style="left:97%;background:${tickColor};color:${tickColor}" title="Quota: ${fmt(quota)}（超出顯示範圍）">
+        // 目標超出圖表右側
+        tickHtml = `<div class="bar-quota-tick" style="left:97%;background:${tickColor};color:${tickColor}" title="${tipText}（超出顯示範圍）">
           <span class="bar-quota-arrow" style="color:${tickColor}">▶</span>
         </div>`;
       }
