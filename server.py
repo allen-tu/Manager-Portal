@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
 銷售案 Forecast 分析系統 — 後端服務
+版本：v1.1.0
 執行方式：雙擊 啟動.bat (Windows) 或 啟動.command (Mac)
 """
+__version__ = '1.1.0'
 import os, json, sys, webbrowser, threading, time, io
 from datetime import datetime
 from flask import Flask, request, jsonify, send_file, abort
