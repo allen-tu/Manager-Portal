@@ -3,7 +3,7 @@
 銷售案 Forecast 分析系統 — 後端服務
 執行方式：雙擊 啟動.bat (Windows) 或 啟動.command (Mac)
 """
-import os, json, sys, webbrowser, threading, time
+import os, json, sys, webbrowser, threading, time, io
 from datetime import datetime
 from flask import Flask, request, jsonify, send_file, abort
 
@@ -74,7 +74,56 @@ def init_db():
                 dim_type   TEXT,
                 dim_name   TEXT,
                 amount     REAL,
+                source     TEXT DEFAULT 'manual',
                 updated_at TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS order_uploads (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                filename    TEXT,
+                uploaded_at TEXT,
+                year        INTEGER,
+                row_count   INTEGER
+            );
+
+            CREATE TABLE IF NOT EXISTS opp_tracking (
+                id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                case_no      TEXT NOT NULL,
+                case_name    TEXT DEFAULT '',
+                cust_name    TEXT DEFAULT '',
+                note         TEXT NOT NULL,
+                is_done      INTEGER DEFAULT 0,
+                done_note    TEXT DEFAULT '',
+                done_at      TEXT DEFAULT '',
+                created_at   TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS order_records (
+                id               INTEGER PRIMARY KEY AUTOINCREMENT,
+                upload_id        INTEGER REFERENCES order_uploads(id) ON DELETE CASCADE,
+                contract_no      TEXT,
+                contract_no_bu   TEXT,
+                contract_name    TEXT,
+                cust_name        TEXT,
+                register_date    TEXT,
+                register_year    INTEGER,
+                register_month   INTEGER,
+                amount_pretax    REAL,
+                biz_bu           TEXT,
+                biz_dept         TEXT,
+                biz_rep          TEXT,
+                support_bu       TEXT,
+                support_dept     TEXT,
+                transaction_type TEXT,
+                contract_type    TEXT,
+                industry         TEXT,
+                industry_class   TEXT,
+                product_line     TEXT,
+                biz_line         TEXT,
+                vendor           TEXT,
+                product_name     TEXT,
+                item_seq         TEXT,
+                case_no          TEXT
             );
         """)
         conn.commit()
@@ -102,6 +151,26 @@ def init_db():
             pass
         try:
             conn.execute("ALTER TABLE case_items ADD COLUMN support_dept TEXT DEFAULT ''")
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE orders ADD COLUMN source TEXT DEFAULT 'manual'")
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE order_records ADD COLUMN biz_rep TEXT DEFAULT ''")
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE opp_tracking ADD COLUMN done_note TEXT DEFAULT ''")
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE opp_tracking ADD COLUMN done_at TEXT DEFAULT ''")
             conn.commit()
         except Exception:
             pass
@@ -563,7 +632,7 @@ def quotas_delete(qid):
 def orders_get():
     year = request.args.get('year', type=int)
     with get_db() as conn:
-        q = "SELECT id,year,dim_type,dim_name,amount,updated_at FROM orders"
+        q = "SELECT id,year,dim_type,dim_name,amount,source,updated_at FROM orders"
         args = ()
         if year:
             q += " WHERE year=?"
@@ -602,6 +671,423 @@ def orders_delete(oid):
         conn.execute("DELETE FROM orders WHERE id=?", (oid,))
         conn.commit()
     return jsonify({'ok': True})
+
+# ── Orders: source info ───────────────────────────────────────────────────────
+@app.route('/api/order_uploads', methods=['GET'])
+def order_uploads_list():
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id,filename,uploaded_at,year,row_count FROM order_uploads ORDER BY uploaded_at DESC"
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+# ── Orders: delete upload record (cascade records + re-aggregate orders) ──────
+@app.route('/api/order_uploads/<int:uid>', methods=['DELETE'])
+def order_upload_delete(uid):
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    with get_db() as conn:
+        # 找出這次上傳涵蓋的年度
+        years = [r['register_year'] for r in conn.execute(
+            "SELECT DISTINCT register_year FROM order_records WHERE upload_id=? AND register_year > 0",
+            (uid,)
+        ).fetchall()]
+        # 刪除 order_uploads（CASCADE 自動清除 order_records）
+        conn.execute("DELETE FROM order_uploads WHERE id=?", (uid,))
+        # 針對每個年度：先清掉舊彙總，再從剩餘 records 重新計算
+        dim_map = {
+            'sales_bu':    'biz_bu',
+            'sales_dept':  'biz_dept',
+            'support_bu':  'support_bu',
+            'support_dept':'support_dept',
+        }
+        for yr in years:
+            conn.execute("DELETE FROM orders WHERE year=? AND source='upload'", (yr,))
+            for dim_type, field in dim_map.items():
+                rows = conn.execute(f"""
+                    SELECT {field} AS dim_name, SUM(amount_pretax) AS total
+                    FROM order_records
+                    WHERE register_year=? AND {field} != ''
+                    GROUP BY {field}
+                """, (yr,)).fetchall()
+                for row in rows:
+                    conn.execute(
+                        "INSERT INTO orders (year,dim_type,dim_name,amount,source,updated_at) VALUES (?,?,?,?,?,?)",
+                        (yr, dim_type, row['dim_name'], row['total'], 'upload', now)
+                    )
+        conn.commit()
+    return jsonify({'ok': True})
+
+# ── Orders: upload XLS and parse ──────────────────────────────────────────────
+@app.route('/api/orders/upload', methods=['POST'])
+def orders_upload():
+    if 'file' not in request.files:
+        return jsonify({'error': '未收到檔案'}), 400
+    f = request.files['file']
+    if not f.filename:
+        return jsonify({'error': '檔名為空'}), 400
+
+    try:
+        import xlrd
+    except ImportError:
+        return jsonify({'error': '伺服器缺少 xlrd 套件，請執行 pip install xlrd==1.2.0'}), 500
+
+    try:
+        data = f.read()
+        wb   = xlrd.open_workbook(file_contents=data)
+        ws   = wb.sheets()[0]
+    except Exception as e:
+        return jsonify({'error': f'無法開啟 Excel 檔案：{e}'}), 400
+
+    # 偵測標題列：若 row[0] 含有「CN005」或「合約」等關鍵字則 row 1 為欄名
+    def cell_str(row, col):
+        try:
+            v = ws.cell_value(row, col)
+            return str(v).strip() if v is not None else ''
+        except Exception:
+            return ''
+
+    first_cell = cell_str(0, 0)
+    if any(k in first_cell for k in ('CN', 'SFM', '每月', '合約', '訂單')):
+        header_row = 1
+        data_start = 2
+    else:
+        header_row = 0
+        data_start = 1
+
+    # 建立欄名→index 對照
+    col = {}
+    for ci in range(ws.ncols):
+        h = cell_str(header_row, ci)
+        if h:
+            col[h] = ci
+
+    # 必要欄位檢查
+    REQ = ['分項金額作帳幣別總額-未稅', '最新合約承辦BU', '支援BU']
+    missing = [r for r in REQ if r not in col]
+    if missing:
+        return jsonify({'error': f'找不到必要欄位：{", ".join(missing)}'}), 400
+
+    def cell_num(row, c_name):
+        if c_name not in col:
+            return 0.0
+        try:
+            v = ws.cell_value(row, col[c_name])
+            return float(v) if v != '' else 0.0
+        except Exception:
+            return 0.0
+
+    def cell_date(row, c_name):
+        """回傳 YYYY/MM/DD 字串；支援 Excel serial 與字串格式"""
+        if c_name not in col:
+            return ''
+        try:
+            cell = ws.cell(row, col[c_name])
+            if cell.ctype == xlrd.XL_CELL_DATE:
+                t = xlrd.xldate_as_tuple(cell.value, wb.datemode)
+                return f'{t[0]:04d}/{t[1]:02d}/{t[2]:02d}'
+            v = str(cell.value).strip()
+            if len(v) >= 8 and ('/' in v or '-' in v):
+                return v[:10].replace('-', '/')
+            return ''
+        except Exception:
+            return ''
+
+    now  = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    records = []
+
+    for r in range(data_start, ws.nrows):
+        # 跳過空白列（以承辦BU 為主要判斷欄）
+        biz_bu = cell_str(r, col.get('最新合約承辦BU', -1)) if '最新合約承辦BU' in col else ''
+        if not biz_bu:
+            continue
+
+        reg_date = cell_date(r, '合約登記日')
+        try:
+            parts  = reg_date.split('/')
+            r_year = int(parts[0])
+            r_mon  = int(parts[1])
+        except Exception:
+            r_year, r_mon = 0, 0
+
+        amt = cell_num(r, '分項金額作帳幣別總額-未稅')
+
+        records.append({
+            'contract_no':      cell_str(r, col.get('合約編號',    -1)),
+            'contract_no_bu':   cell_str(r, col.get('合約編號(BU)', -1)),
+            'contract_name':    cell_str(r, col.get('合約名稱',     -1)),
+            'cust_name':        cell_str(r, col.get('客戶中文名稱', -1)) or cell_str(r, col.get('客戶名稱', -1)),
+            'register_date':    reg_date,
+            'register_year':    r_year,
+            'register_month':   r_mon,
+            'amount_pretax':    amt,
+            'biz_bu':           biz_bu,
+            'biz_dept':         cell_str(r, col.get('最新合約承辦部門', -1)),
+            'biz_rep':          (cell_str(r, col.get('最新合約承辦人姓名', -1))
+                                 or cell_str(r, col.get('業務代表',       -1))
+                                 or cell_str(r, col.get('業務人員',       -1))),
+            'support_bu':       cell_str(r, col.get('支援BU',           -1)),
+            'support_dept':     cell_str(r, col.get('支援部門',          -1)),
+            'transaction_type': cell_str(r, col.get('交易型態',          -1)),
+            'contract_type':    cell_str(r, col.get('合約類別',          -1)),
+            'industry':         cell_str(r, col.get('客戶行業別',        -1)),
+            'industry_class':   cell_str(r, col.get('客戶行業別分類',    -1)),
+            'product_line':     cell_str(r, col.get('產品線說明',        -1)),
+            'biz_line':         cell_str(r, col.get('BIZ線說明',        -1)),
+            'vendor':           cell_str(r, col.get('廠商',              -1)),
+            'product_name':     cell_str(r, col.get('產品/專案名稱',     -1)),
+            'item_seq':         cell_str(r, col.get('分項項次',          -1)),
+            'case_no':          cell_str(r, col.get('銷售案編號',        -1)),
+        })
+
+    if not records:
+        return jsonify({'error': '檔案中未找到有效資料列'}), 400
+
+    # 取得所有年度（用於後續彙總）
+    years = sorted({rec['register_year'] for rec in records if rec['register_year'] > 0})
+
+    with get_db() as conn:
+        # 新增 order_upload 記錄
+        cur = conn.execute(
+            "INSERT INTO order_uploads (filename,uploaded_at,year,row_count) VALUES (?,?,?,?)",
+            (f.filename, now, years[0] if years else 0, len(records))
+        )
+        upload_id = cur.lastrowid
+
+        # 存入 order_records
+        for rec in records:
+            conn.execute("""
+                INSERT INTO order_records
+                (upload_id,contract_no,contract_no_bu,contract_name,cust_name,
+                 register_date,register_year,register_month,amount_pretax,
+                 biz_bu,biz_dept,biz_rep,support_bu,support_dept,
+                 transaction_type,contract_type,industry,industry_class,
+                 product_line,biz_line,vendor,product_name,item_seq,case_no)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                upload_id,
+                rec['contract_no'], rec['contract_no_bu'], rec['contract_name'], rec['cust_name'],
+                rec['register_date'], rec['register_year'], rec['register_month'], rec['amount_pretax'],
+                rec['biz_bu'], rec['biz_dept'], rec['biz_rep'], rec['support_bu'], rec['support_dept'],
+                rec['transaction_type'], rec['contract_type'], rec['industry'], rec['industry_class'],
+                rec['product_line'], rec['biz_line'], rec['vendor'], rec['product_name'],
+                rec['item_seq'], rec['case_no']
+            ))
+
+        # 依年度自動彙總，更新 orders 表（取代 source='upload' 的舊資料）
+        for yr in years:
+            # 先刪除該年度的上傳來源訂單
+            conn.execute("DELETE FROM orders WHERE year=? AND source='upload'", (yr,))
+
+            dim_map = {
+                'sales_bu':    ('biz_bu',      '最新合約承辦BU'),
+                'sales_dept':  ('biz_dept',    '最新合約承辦部門'),
+                'support_bu':  ('support_bu',  '支援BU'),
+                'support_dept':('support_dept','支援部門'),
+            }
+            for dim_type, (field, _) in dim_map.items():
+                rows = conn.execute(f"""
+                    SELECT {field} AS dim_name, SUM(amount_pretax) AS total
+                    FROM order_records
+                    WHERE upload_id=? AND register_year=? AND {field} != ''
+                    GROUP BY {field}
+                """, (upload_id, yr)).fetchall()
+                for row in rows:
+                    conn.execute(
+                        "INSERT INTO orders (year,dim_type,dim_name,amount,source,updated_at) VALUES (?,?,?,?,?,?)",
+                        (yr, dim_type, row['dim_name'], row['total'], 'upload', now)
+                    )
+
+        conn.commit()
+
+    return jsonify({
+        'ok':        True,
+        'upload_id': upload_id,
+        'row_count': len(records),
+        'years':     years,
+        'filename':  f.filename
+    })
+
+# ── Orders: detail records ─────────────────────────────────────────────────────
+@app.route('/api/orders/detail', methods=['GET'])
+def orders_detail():
+    year  = request.args.get('year',  type=int)
+    month = request.args.get('month', type=int)   # 0 = all
+    dim   = request.args.get('dim',   default='support_bu')   # support_bu / support_dept
+
+    # 取最新一次的 order_upload
+    with get_db() as conn:
+        latest_upload = conn.execute(
+            "SELECT id FROM order_uploads ORDER BY uploaded_at DESC LIMIT 1"
+        ).fetchone()
+        if not latest_upload:
+            return jsonify({'records': [], 'monthly_totals': []})
+
+        uid = latest_upload['id']
+        conditions = ["upload_id=?"]
+        params: list = [uid]
+        if year:
+            conditions.append("register_year=?")
+            params.append(year)
+        if month:
+            conditions.append("register_month=?")
+            params.append(month)
+
+        where = " AND ".join(conditions)
+        rows = conn.execute(f"""
+            SELECT contract_no, contract_no_bu, contract_name, cust_name,
+                   register_date, register_year, register_month,
+                   amount_pretax, biz_bu, biz_dept, biz_rep, support_bu, support_dept,
+                   transaction_type, contract_type, industry, product_line,
+                   vendor, product_name, item_seq, case_no
+            FROM order_records WHERE {where}
+            ORDER BY register_year DESC, register_month DESC, support_bu, support_dept, contract_name
+        """, params).fetchall()
+
+        # 月份加總（依維度 + 月份）
+        dim_field = 'support_bu' if dim == 'support_bu' else 'support_dept'
+        monthly = conn.execute(f"""
+            SELECT register_year, register_month, {dim_field} AS dim_name,
+                   SUM(amount_pretax) AS total, COUNT(*) AS cnt
+            FROM order_records WHERE {where}
+            AND {dim_field} != ''
+            GROUP BY register_year, register_month, {dim_field}
+            ORDER BY register_year DESC, register_month DESC, {dim_field}
+        """, params).fetchall()
+
+    return jsonify({
+        'records':       [dict(r) for r in rows],
+        'monthly_totals': [dict(r) for r in monthly]
+    })
+
+# ── Orders: analysis stats ─────────────────────────────────────────────────────
+@app.route('/api/orders/analysis', methods=['GET'])
+def orders_analysis():
+    year = request.args.get('year', type=int, default=datetime.now().year)
+
+    with get_db() as conn:
+        latest_upload = conn.execute(
+            "SELECT id FROM order_uploads ORDER BY uploaded_at DESC LIMIT 1"
+        ).fetchone()
+        if not latest_upload:
+            return jsonify({})
+
+        uid = latest_upload['id']
+        base_cond = "upload_id=? AND register_year=?"
+        bp = (uid, year)
+
+        def agg(field):
+            rows = conn.execute(f"""
+                SELECT {field} AS name, SUM(amount_pretax) AS total, COUNT(*) AS cnt
+                FROM order_records WHERE {base_cond} AND {field} != ''
+                GROUP BY {field} ORDER BY total DESC
+            """, bp).fetchall()
+            return [{'name': r['name'], 'total': r['total'], 'cnt': r['cnt']} for r in rows]
+
+        # 月度趨勢
+        monthly = conn.execute(f"""
+            SELECT register_month AS month, SUM(amount_pretax) AS total, COUNT(*) AS cnt
+            FROM order_records WHERE {base_cond}
+            GROUP BY register_month ORDER BY register_month
+        """, bp).fetchall()
+
+        # Grand total
+        grand = conn.execute(f"""
+            SELECT SUM(amount_pretax) AS total, COUNT(*) AS cnt
+            FROM order_records WHERE {base_cond}
+        """, bp).fetchone()
+
+    return jsonify({
+        'year':             year,
+        'grand_total':      grand['total'] or 0,
+        'grand_count':      grand['cnt']   or 0,
+        'transaction_type': agg('transaction_type'),
+        'contract_type':    agg('contract_type'),
+        'industry':         agg('industry'),
+        'industry_class':   agg('industry_class'),
+        'product_line':     agg('product_line'),
+        'biz_line':         agg('biz_line'),
+        'support_bu':       agg('support_bu'),
+        'biz_bu':           agg('biz_bu'),
+        'monthly':          [{'month': r['month'], 'total': r['total'], 'cnt': r['cnt']} for r in monthly],
+    })
+
+# ── Opportunity Tracking ──────────────────────────────────────────────────────
+
+@app.route('/api/opp_tracking/summary', methods=['GET'])
+def opp_tracking_summary():
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT case_no, COUNT(*) AS total, SUM(is_done) AS done FROM opp_tracking GROUP BY case_no"
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/opp_tracking', methods=['GET'])
+def opp_tracking_get():
+    case_no = request.args.get('case_no', '')
+    with get_db() as conn:
+        rows = conn.execute(
+            "SELECT id, case_no, case_name, cust_name, note, is_done, done_note, done_at, created_at FROM opp_tracking WHERE case_no=? ORDER BY id ASC",
+            (case_no,)
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/opp_tracking', methods=['POST'])
+def opp_tracking_post():
+    data = request.get_json() or {}
+    case_no   = data.get('case_no', '').strip()
+    case_name = data.get('case_name', '').strip()
+    cust_name = data.get('cust_name', '').strip()
+    note      = data.get('note', '').strip()
+    if not case_no or not note:
+        return jsonify({'error': '缺少必要欄位'}), 400
+    now = datetime.now().strftime('%Y-%m-%d %H:%M')
+    with get_db() as conn:
+        cur = conn.execute(
+            "INSERT INTO opp_tracking (case_no, case_name, cust_name, note, is_done, created_at) VALUES (?,?,?,?,0,?)",
+            (case_no, case_name, cust_name, note, now)
+        )
+        conn.commit()
+        row = conn.execute("SELECT id, case_no, case_name, cust_name, note, is_done, done_note, done_at, created_at FROM opp_tracking WHERE id=?", (cur.lastrowid,)).fetchone()
+    return jsonify(dict(row))
+
+@app.route('/api/opp_tracking/<int:tid>', methods=['PUT'])
+def opp_tracking_put(tid):
+    data = request.get_json() or {}
+    is_done   = int(bool(data.get('is_done', False)))
+    done_note = data.get('done_note', None)
+    done_at   = data.get('done_at',   None)
+    with get_db() as conn:
+        if done_note is not None or done_at is not None:
+            conn.execute(
+                "UPDATE opp_tracking SET is_done=?, done_note=?, done_at=? WHERE id=?",
+                (is_done, done_note or '', done_at or '', tid)
+            )
+        else:
+            conn.execute("UPDATE opp_tracking SET is_done=? WHERE id=?", (is_done, tid))
+        conn.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/opp_tracking/<int:tid>', methods=['DELETE'])
+def opp_tracking_delete(tid):
+    with get_db() as conn:
+        conn.execute("DELETE FROM opp_tracking WHERE id=?", (tid,))
+        conn.commit()
+    return jsonify({'ok': True})
+
+@app.route('/api/opp_tracking/all', methods=['GET'])
+def opp_tracking_all():
+    filter_done = request.args.get('done', default=None)
+    with get_db() as conn:
+        if filter_done is None:
+            rows = conn.execute(
+                "SELECT id, case_no, case_name, cust_name, note, is_done, done_note, done_at, created_at FROM opp_tracking ORDER BY is_done ASC, id DESC"
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT id, case_no, case_name, cust_name, note, is_done, done_note, done_at, created_at FROM opp_tracking WHERE is_done=? ORDER BY id DESC",
+                (int(filter_done),)
+            ).fetchall()
+    return jsonify([dict(r) for r in rows])
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 

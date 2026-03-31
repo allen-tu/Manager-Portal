@@ -497,6 +497,158 @@
   .mgmt-edit-btn:hover { background:#e3f2fd; }
   .mgmt-del-btn  { border-color:#f44336; color:#f44336; background:white; }
   .mgmt-del-btn:hover  { background:#ffebee; }
+
+  /* ── 訂單按鈕下拉選單 ── */
+  .order-dropdown { position:relative; display:inline-block; }
+  .order-menu { display:none; position:absolute; right:0; top:calc(100% + 4px); background:white;
+    border:1px solid #dde3f0; border-radius:6px; box-shadow:0 4px 16px rgba(0,0,0,0.15);
+    min-width:160px; z-index:9999; overflow:hidden; }
+  .order-menu.open { display:block; }
+  .order-menu-item { display:block; width:100%; padding:10px 16px; text-align:left; background:none;
+    border:none; cursor:pointer; font-size:13px; color:#333; white-space:nowrap; }
+  .order-menu-item:hover { background:#eef4ff; color:#1a3a6b; }
+  .order-menu-divider { height:1px; background:#eee; margin:2px 0; }
+
+  /* ── 訂單來源標示 ── */
+  .src-badge { display:inline-block; font-size:10px; font-weight:700; padding:1px 5px;
+    border-radius:3px; margin-left:6px; vertical-align:middle; }
+  .src-badge.upload { background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; }
+  .src-badge.manual { background:#fff8e1; color:#f57f17; border:1px solid #ffe082; }
+
+  /* ── 訂單上傳 Modal ── */
+  .ord-upl-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3100; align-items:center; justify-content:center; }
+  .ord-upl-modal.open { display:flex; }
+  .ord-upl-box { background:white; border-radius:10px; padding:28px 32px; width:580px; max-width:96vw; box-shadow:0 8px 32px rgba(0,0,0,0.2); }
+  .ord-upl-box h3 { margin:0 0 16px; font-size:16px; color:#1a3a6b; }
+  .ord-upl-drop { border:2px dashed #aac; border-radius:8px; padding:28px 20px; text-align:center; cursor:pointer; color:#666; transition:border-color .2s; }
+  .ord-upl-drop:hover, .ord-upl-drop.dragover { border-color:#1a3a6b; color:#1a3a6b; background:#f0f4ff; }
+  .ord-upl-info { margin-top:14px; padding:10px 14px; background:#f0f4ff; border-radius:6px; font-size:12px; color:#555; display:none; }
+  .ord-upl-btns { display:flex; gap:10px; margin-top:18px; justify-content:flex-end; }
+  .ord-upl-btn-cancel { padding:8px 20px; border:1px solid #ccc; border-radius:5px; background:white; cursor:pointer; font-size:13px; }
+  .ord-upl-btn-submit { padding:8px 20px; border:none; border-radius:5px; background:#1a3a6b; color:white; cursor:pointer; font-size:13px; font-weight:600; }
+  .ord-upl-btn-submit:disabled { background:#aaa; cursor:not-allowed; }
+  .ord-upl-history { margin-top:20px; border-top:1px solid #eef0f4; padding-top:14px; }
+  .ord-upl-history-title { font-size:12px; font-weight:700; color:#555; margin-bottom:8px; }
+  .ord-upl-history-empty { font-size:12px; color:#bbb; text-align:center; padding:10px 0; }
+  .ord-upl-hist-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .ord-upl-hist-table th { background:#f5f7fb; padding:6px 10px; font-weight:600; color:#555; text-align:left; border-bottom:1px solid #eef0f4; }
+  .ord-upl-hist-table td { padding:6px 10px; border-bottom:1px solid #f5f7fb; vertical-align:middle; }
+  .ord-upl-hist-table tr:last-child td { border-bottom:none; }
+  .ord-upl-hist-del { background:none; border:1px solid #e57373; color:#c62828; border-radius:4px; padding:2px 8px; font-size:11px; cursor:pointer; white-space:nowrap; }
+  .ord-upl-hist-del:hover { background:#fdecea; }
+
+  /* ── 訂單明細 Tab ── */
+  .ord-detail-toolbar { display:flex; align-items:center; gap:10px; padding:10px 0 14px; flex-wrap:wrap; }
+  .ord-detail-sel { padding:5px 10px; border:1px solid #dde3f0; border-radius:5px; font-size:12px; color:#333; background:white; cursor:pointer; }
+  .ord-detail-empty { text-align:center; color:#bbb; padding:40px; font-size:14px; }
+  .ord-detail-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .ord-detail-table th { background:#1a3a6b; color:white; padding:8px 10px; font-weight:600; text-align:left; white-space:nowrap; }
+  .ord-detail-table td { padding:7px 10px; border-bottom:1px solid #eef; vertical-align:top; }
+  .ord-detail-table tr:hover td { background:#f5f8ff; }
+  .ord-detail-table .month-header td { background:#eef2fa; font-weight:700; color:#1a3a6b; padding:6px 10px; }
+  .ord-detail-table .bu-subtotal td { background:#f5f8ff; font-weight:600; color:#333; padding:5px 10px; }
+  .ord-detail-table .month-total td { background:#e8edf8; font-weight:700; color:#1a3a6b; padding:6px 10px; border-top:1px solid #c5d0e8; }
+  .ord-detail-table .num { text-align:right; font-variant-numeric:tabular-nums; }
+  .ord-upload-hint { font-size:12px; color:#888; padding:8px 0; }
+  .ord-source-info { font-size:11px; color:#2e7d32; background:#f1f8f1; border:1px solid #c8e6c9; border-radius:4px; padding:5px 10px; display:inline-block; }
+
+  /* ── 訂單分析 Modal ── */
+  .ord-analysis-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:3100; align-items:flex-start; justify-content:center; overflow-y:auto; padding:30px 0; }
+  .ord-analysis-modal.open { display:flex; }
+  .ord-analysis-box { background:white; border-radius:10px; width:900px; max-width:96vw; box-shadow:0 8px 32px rgba(0,0,0,0.2); overflow:hidden; }
+  .ord-analysis-header { background:#1a3a6b; color:white; padding:16px 20px; display:flex; align-items:center; justify-content:space-between; }
+  .ord-analysis-header h3 { margin:0; font-size:16px; }
+  .ord-analysis-close { background:none; border:none; color:white; font-size:18px; cursor:pointer; opacity:0.8; }
+  .ord-analysis-close:hover { opacity:1; }
+  .ord-analysis-body { padding:20px; }
+  .ord-analysis-kpis { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .ord-kpi { flex:1; min-width:130px; background:#f5f8ff; border-radius:8px; padding:14px 16px; text-align:center; border:1px solid #dde3f0; }
+  .ord-kpi-label { font-size:11px; color:#666; margin-bottom:4px; }
+  .ord-kpi-value { font-size:20px; font-weight:700; color:#1a3a6b; }
+  .ord-analysis-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .ord-analysis-grid.wide { grid-template-columns:1fr; }
+  @media(max-width:700px){ .ord-analysis-grid { grid-template-columns:1fr; } }
+  .ord-stat-card { border:1px solid #dde3f0; border-radius:8px; overflow:hidden; }
+  .ord-stat-title { background:#f0f4ff; padding:8px 12px; font-size:12px; font-weight:700; color:#1a3a6b; border-bottom:1px solid #dde3f0; }
+  .ord-stat-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .ord-stat-table td { padding:6px 12px; border-bottom:1px solid #f0f0f0; }
+  .ord-stat-table tr:last-child td { border-bottom:none; }
+  .ord-stat-table .amt { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; color:#1a3a6b; }
+  .ord-stat-table .cnt { text-align:right; color:#888; font-size:11px; }
+  .ord-stat-bar-wrap { display:flex; align-items:center; gap:8px; }
+  .ord-stat-bar { flex:1; height:8px; background:#e0e7ff; border-radius:4px; overflow:hidden; }
+  .ord-stat-bar-fill { height:100%; background:#1a3a6b; border-radius:4px; }
+  .ord-monthly-chart { padding:12px; }
+  .ord-monthly-bars { display:flex; align-items:flex-end; gap:6px; height:120px; }
+  .ord-monthly-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .ord-monthly-bar { width:100%; background:#1a3a6b; border-radius:3px 3px 0 0; min-height:2px; transition:height .3s; }
+  .ord-monthly-bar:hover { background:#2c5aa0; }
+  .ord-monthly-label { font-size:10px; color:#888; }
+  .ord-monthly-amt { font-size:9px; color:#1a3a6b; font-weight:600; }
+  .ord-year-sel { padding:4px 8px; border:1px solid rgba(255,255,255,0.4); border-radius:4px; background:rgba(255,255,255,0.15); color:white; font-size:12px; cursor:pointer; }
+
+  /* ── Opportunity Tracking ── */
+  .opp-trk-btn { background:none; border:none; cursor:pointer; padding:2px 4px; font-size:12px; color:#ccc; border-radius:4px; line-height:1; transition:color .15s; }
+  .opp-trk-btn:hover { color:#1a3a6b; background:#f0f4ff; }
+  .opp-trk-badge { display:inline-block; min-width:15px; height:15px; line-height:15px; border-radius:8px; text-align:center; font-size:9px; font-weight:700; padding:0 3px; margin-left:2px; vertical-align:middle; }
+  .opp-trk-badge.pending { background:#ff7043; color:white; }
+  .opp-trk-badge.done    { background:#66bb6a; color:white; }
+  /* Tracking modal */
+  .opp-trk-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:2100; align-items:center; justify-content:center; }
+  .opp-trk-overlay.open { display:flex; }
+  .opp-trk-modal { background:white; border-radius:10px; width:520px; max-width:95vw; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.25); }
+  .opp-trk-modal-header { padding:16px 20px 12px; border-bottom:1px solid #eef0f4; }
+  .opp-trk-modal-title { font-size:15px; font-weight:700; color:#1a3a6b; margin-bottom:4px; }
+  .opp-trk-modal-sub { font-size:12px; color:#666; }
+  .opp-trk-modal-body { flex:1; overflow-y:auto; padding:14px 20px; }
+  .opp-trk-modal-footer { padding:12px 20px; border-top:1px solid #eef0f4; display:flex; gap:8px; }
+  .opp-trk-input { flex:1; border:1px solid #dde3f0; border-radius:6px; padding:8px 10px; font-size:13px; resize:none; outline:none; font-family:inherit; }
+  .opp-trk-input:focus { border-color:#1a3a6b; }
+  .opp-trk-add-btn { padding:8px 18px; background:#1a3a6b; color:white; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; }
+  .opp-trk-add-btn:hover { background:#2c5aa0; }
+  .opp-trk-item { display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid #f0f3f8; }
+  .opp-trk-item:last-child { border-bottom:none; }
+  .opp-trk-check { margin-top:2px; width:15px; height:15px; cursor:pointer; accent-color:#1a3a6b; flex-shrink:0; }
+  .opp-trk-item-body { flex:1; min-width:0; }
+  .opp-trk-note { font-size:13px; color:#222; line-height:1.4; }
+  .opp-trk-note.done { text-decoration:line-through; color:#aaa; }
+  .opp-trk-time { font-size:11px; color:#aaa; margin-top:2px; }
+  .opp-trk-del { background:none; border:none; color:#ddd; font-size:14px; cursor:pointer; padding:0 2px; flex-shrink:0; line-height:1; }
+  .opp-trk-del:hover { color:#e53935; }
+  .opp-trk-done-info { font-size:12px; color:#555; margin-top:4px; padding:4px 8px; background:#f5faf5; border-left:3px solid #66bb6a; border-radius:0 4px 4px 0; }
+  .opp-trk-done-at  { font-size:11px; color:#aaa; margin-top:2px; }
+  .opp-trk-done-expand { margin-top:8px; background:#f8fbff; border:1px solid #dde3f0; border-radius:6px; padding:10px; }
+  .opp-trk-done-textarea { width:100%; box-sizing:border-box; border:1px solid #dde3f0; border-radius:5px; padding:7px 9px; font-size:12px; resize:none; outline:none; font-family:inherit; background:white; }
+  .opp-trk-done-textarea:focus { border-color:#1a3a6b; }
+  .opp-trk-done-expand-btns { display:flex; justify-content:flex-end; gap:8px; margin-top:8px; }
+  .opp-trk-skip-btn { padding:5px 14px; background:none; border:1px solid #ccc; color:#666; border-radius:5px; font-size:12px; cursor:pointer; }
+  .opp-trk-skip-btn:hover { background:#f5f5f5; }
+  .opp-trk-confirm-btn { padding:5px 14px; background:#1a3a6b; color:white; border:none; border-radius:5px; font-size:12px; font-weight:600; cursor:pointer; }
+  .opp-trk-confirm-btn:hover { background:#2c5aa0; }
+  .opp-trk-empty { text-align:center; color:#bbb; font-size:13px; padding:24px 0; }
+  /* Global tracking list modal */
+  .opp-list-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:2100; align-items:center; justify-content:center; }
+  .opp-list-overlay.open { display:flex; }
+  .opp-list-modal { background:white; border-radius:10px; width:680px; max-width:96vw; max-height:88vh; display:flex; flex-direction:column; box-shadow:0 8px 32px rgba(0,0,0,.25); }
+  .opp-list-header { padding:16px 20px 0; border-bottom:1px solid #eef0f4; }
+  .opp-list-title { font-size:15px; font-weight:700; color:#1a3a6b; margin-bottom:10px; }
+  .opp-list-tabs { display:flex; gap:4px; margin-bottom:0; }
+  .opp-list-tab { padding:6px 16px; border:none; background:none; font-size:12px; color:#666; cursor:pointer; border-bottom:2px solid transparent; font-weight:500; }
+  .opp-list-tab.active { color:#1a3a6b; border-bottom-color:#1a3a6b; font-weight:700; }
+  .opp-list-body { flex:1; overflow-y:auto; padding:14px 20px; }
+  .opp-list-case-group { margin-bottom:16px; }
+  .opp-list-case-header { font-size:12px; font-weight:700; color:#1a3a6b; background:#f0f4ff; padding:6px 10px; border-radius:5px; margin-bottom:6px; }
+  .opp-list-case-no { font-weight:400; color:#888; font-size:11px; margin-left:6px; }
+  .opp-list-item { display:flex; align-items:flex-start; gap:10px; padding:7px 10px; border-radius:5px; }
+  .opp-list-item:hover { background:#fafbff; }
+  .opp-list-check { margin-top:2px; width:14px; height:14px; cursor:pointer; accent-color:#1a3a6b; flex-shrink:0; }
+  .opp-list-note { flex:1; font-size:13px; color:#222; line-height:1.4; }
+  .opp-list-note.done { text-decoration:line-through; color:#aaa; }
+  .opp-list-time { font-size:11px; color:#aaa; }
+  .opp-list-empty { text-align:center; color:#bbb; font-size:13px; padding:40px 0; }
+  .opp-list-close { margin-left:auto; padding:8px 20px; background:#f0f3f8; color:#333; border:none; border-radius:6px; font-size:13px; cursor:pointer; }
+  .opp-list-close:hover { background:#e0e5ef; }
+  .opp-list-footer { padding:12px 20px; border-top:1px solid #eef0f4; display:flex; justify-content:flex-end; }
 </style>
 </head>
 <body>
@@ -540,7 +692,16 @@
       </button>
       <button class="hist-btn" id="stt-btn" onclick="openSettings()" style="display:none">⚙️ 設定</button>
       <button class="hist-btn" id="quota-btn" onclick="openQuota()" style="display:none">🎯 Quota</button>
-      <button class="hist-btn" id="order-btn" onclick="openOrder()" style="display:none">📦 訂單</button>
+      <button class="hist-btn" id="opp-list-btn" onclick="openOppList()" style="display:none">📋 追蹤清單<span class="hist-badge" id="opp-list-badge" style="display:none"></span></button>
+      <div class="order-dropdown" id="order-dropdown" style="display:none">
+        <button class="hist-btn" onclick="toggleOrderMenu(event)">📦 訂單 ▾</button>
+        <div class="order-menu" id="order-menu">
+          <button class="order-menu-item" onclick="openOrder();closeOrderMenu()">📋 訂單管理</button>
+          <button class="order-menu-item" onclick="openOrderUpload();closeOrderMenu()">📤 上傳訂單清單</button>
+          <div class="order-menu-divider"></div>
+          <button class="order-menu-item" onclick="openOrderAnalysis();closeOrderMenu()">📈 訂單分析</button>
+        </div>
+      </div>
       <button class="reload-btn" onclick="openUploadModal()">📤 上傳新資料</button>
     </div>
   </div>
@@ -598,6 +759,20 @@
       <button class="filter-btn filter-btn-none" style="margin-left:auto" onclick="clearAllFilters()">清除篩選</button>
     </div>
 
+    <!-- 業務BU 銷售金額結構 Section（可收合） -->
+    <div class="section-wrap" id="section-bar" style="margin-bottom:18px">
+      <div class="section-header">
+        <span style="font-weight:700;font-size:13px">📊 業務BU 銷售金額結構（未稅，依結案信心度堆疊）</span>
+        <button class="collapse-btn" id="collapse-bar-btn" onclick="toggleSection('bar')">▲ 收合</button>
+      </div>
+      <div class="section-body" id="section-bar-body">
+        <div style="padding:10px 18px 18px">
+          <div class="legend" id="legend"></div>
+          <div id="bar"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- 達成率 Section -->
     <div class="achieve-wrap" id="achieve-wrap">
       <div class="achieve-hd">
@@ -629,12 +804,6 @@
       </div>
     </div>
 
-    <div class="bar-wrap">
-      <div class="bar-title">各業務BU 銷售金額結構（未稅，依結案信心度堆疊）</div>
-      <div class="legend" id="legend"></div>
-      <div id="bar"></div>
-    </div>
-
     <!-- Table section with collapse + tabs -->
     <div class="section-wrap" id="section-main">
       <div class="section-header">
@@ -643,6 +812,7 @@
           <button class="dim-tab"        id="dim-tab-dept"     onclick="switchDimTab('dept')">業務部門維度</button>
           <button class="dim-tab"        id="dim-tab-sbu"      onclick="switchDimTab('sbu')">支援BU維度</button>
           <button class="dim-tab"        id="dim-tab-sdept"    onclick="switchDimTab('sdept')">支援部門維度</button>
+          <button class="dim-tab"        id="dim-tab-orddet"   onclick="switchDimTab('orddet')">📋 訂單明細</button>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <button class="filter-btn filter-btn-all" id="expand-rep-btn" onclick="toggleAllReps()" style="white-space:nowrap">＋ 展開全部業務</button>
@@ -679,6 +849,25 @@
             <tbody id="tbody-sdept"></tbody>
           </table>
         </div>
+        <div id="dim-orddet" style="display:none">
+          <div class="ord-detail-toolbar">
+            <span style="font-size:13px;font-weight:600;color:#1a3a6b">📋 訂單明細</span>
+            <select class="ord-detail-sel" id="orddet-dim-sel" onchange="buildOrderDetailTab()">
+              <option value="support_bu">依支援BU</option>
+              <option value="support_dept">依支援部門</option>
+            </select>
+            <select class="ord-detail-sel" id="orddet-month-sel" onchange="loadOrderDetail()">
+              <option value="0">全部月份</option>
+            </select>
+            <select class="ord-detail-sel" id="orddet-year-sel" onchange="loadOrderDetail()">
+            </select>
+            <span id="ord-source-info-tab"></span>
+            <div style="margin-left:auto">
+              <button id="orddet-toggle-all-btn" class="filter-btn filter-btn-none" onclick="toggleAllDetailMonths()" style="display:none">▶ 收合全部</button>
+            </div>
+          </div>
+          <div id="ord-detail-content"><div class="ord-detail-empty">尚未上傳訂單清單，請點選上方「訂單 ▾ → 上傳訂單清單」</div></div>
+        </div>
       </div>
     </div>
 
@@ -687,10 +876,10 @@
         <span style="font-weight:700;font-size:13px">📋 業務別銷售案匯總｜各業務跨 BU 信心度統計</span>
         <div style="display:flex;align-items:center;gap:10px">
           <span class="result-count" id="rep-result-count"></span>
-          <button class="collapse-btn" id="collapse-rep-btn" onclick="toggleSection('rep')">▲ 收合</button>
+          <button class="collapse-btn" id="collapse-rep-btn" onclick="toggleSection('rep')">▼ 展開</button>
         </div>
       </div>
-      <div class="section-body" id="section-rep-body">
+      <div class="section-body collapsed" id="section-rep-body">
         <table>
           <thead><tr id="thead-row2"></tr></thead>
           <tbody id="tbody2"></tbody>
@@ -819,10 +1008,56 @@
         <input id="order-amt-input"  class="mgmt-input" placeholder="訂單金額" type="number" style="flex:2">
         <button class="mgmt-add-btn" onclick="addOrder()">＋ 新增</button>
       </div>
+      <div id="order-upload-banner" style="display:none;margin-bottom:8px"></div>
       <table class="mgmt-table">
-        <thead><tr><th style="width:30%">維度名稱</th><th style="width:35%">訂單金額</th><th style="width:20%">更新時間</th><th style="width:15%">操作</th></tr></thead>
+        <thead><tr><th style="width:28%">維度名稱</th><th style="width:28%">訂單金額</th><th style="width:14%">來源</th><th style="width:18%">更新時間</th><th style="width:12%">操作</th></tr></thead>
         <tbody id="order-tbody"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Opportunity Tracking Modal (single case) ── -->
+<div class="opp-trk-overlay" id="opp-trk-overlay">
+  <div class="opp-trk-modal">
+    <div class="opp-trk-modal-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div class="opp-trk-modal-title">📝 追蹤筆記</div>
+          <div class="opp-trk-modal-sub" id="opp-trk-modal-sub">－</div>
+        </div>
+        <button onclick="closeOppTracking()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888;margin-top:-2px">✕</button>
+      </div>
+    </div>
+    <div class="opp-trk-modal-body" id="opp-trk-modal-body">
+      <div class="opp-trk-empty">載入中…</div>
+    </div>
+    <div class="opp-trk-modal-footer">
+      <textarea class="opp-trk-input" id="opp-trk-input" rows="2" placeholder="輸入追蹤事項…" onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();addOppTracking();}"></textarea>
+      <button class="opp-trk-add-btn" onclick="addOppTracking()">新增</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Opportunity Tracking Global List Modal ── -->
+<div class="opp-list-overlay" id="opp-list-overlay">
+  <div class="opp-list-modal">
+    <div class="opp-list-header">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="opp-list-title">📋 Opportunity 追蹤清單</div>
+        <button onclick="closeOppList()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888">✕</button>
+      </div>
+      <div class="opp-list-tabs">
+        <button class="opp-list-tab active" id="opp-list-tab-0" onclick="switchOppListTab(0)">未完成</button>
+        <button class="opp-list-tab" id="opp-list-tab-1" onclick="switchOppListTab(1)">全部</button>
+        <button class="opp-list-tab" id="opp-list-tab-2" onclick="switchOppListTab(2)">已完成</button>
+      </div>
+    </div>
+    <div class="opp-list-body" id="opp-list-body">
+      <div class="opp-list-empty">載入中…</div>
+    </div>
+    <div class="opp-list-footer">
+      <button class="opp-list-close" onclick="closeOppList()">關閉</button>
     </div>
   </div>
 </div>
@@ -844,6 +1079,65 @@
       <label class="upl-select-btn" for="upl-file-input">選擇檔案</label>
       <button class="upl-cancel-btn" onclick="closeUploadModal()">取消</button>
       <div class="upl-modal-err" id="upl-modal-err"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Order Upload Modal ── -->
+<div class="ord-upl-modal" id="ord-upl-modal">
+  <div class="ord-upl-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 style="margin:0;font-size:16px;color:#1a3a6b">📤 上傳訂單清單</h3>
+      <button onclick="closeOrderUpload()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#888">✕</button>
+    </div>
+    <div class="ord-upl-drop" id="ord-upl-drop" onclick="document.getElementById('ord-upl-input').click()">
+      <div style="font-size:36px;margin-bottom:8px">📂</div>
+      <p style="font-size:14px;margin-bottom:4px">拖曳 XLS/XLSX 至此，或點擊選擇</p>
+      <p style="font-size:12px;color:#aaa">格式：每月合約_訂單新增檔</p>
+    </div>
+    <input type="file" id="ord-upl-input" accept=".xls,.xlsx" style="display:none">
+    <div style="text-align:center;margin-top:12px">
+      <label for="ord-upl-input" style="display:inline-block;padding:7px 22px;border:1px solid #1a3a6b;border-radius:5px;color:#1a3a6b;font-size:13px;font-weight:600;cursor:pointer;background:white;transition:background .15s">
+        📁 選擇檔案
+      </label>
+    </div>
+    <div class="ord-upl-info" id="ord-upl-info"></div>
+    <div id="ord-upl-err" style="display:none;margin-top:10px;color:#c62828;font-size:13px"></div>
+    <div class="ord-upl-btns">
+      <button class="ord-upl-btn-cancel" onclick="closeOrderUpload()">取消</button>
+      <button class="ord-upl-btn-submit" id="ord-upl-submit" onclick="submitOrderUpload()" disabled>上傳並匯入</button>
+    </div>
+    <!-- 已上傳記錄管理 -->
+    <div class="ord-upl-history">
+      <div class="ord-upl-history-title">📋 已上傳記錄</div>
+      <div id="ord-upl-hist-body"><div class="ord-upl-history-empty">尚無上傳記錄</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Order Analysis Modal ── -->
+<div class="ord-analysis-modal" id="ord-analysis-modal">
+  <div class="ord-analysis-box">
+    <div class="ord-analysis-header">
+      <h3>📈 訂單分析</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <select class="ord-year-sel" id="ord-analysis-year-sel" onchange="buildOrderAnalysis()"></select>
+        <button class="ord-analysis-close" onclick="closeOrderAnalysis()">✕</button>
+      </div>
+    </div>
+    <div class="ord-analysis-body">
+      <div class="ord-analysis-kpis" id="ord-analysis-kpis">
+        <div class="ord-kpi"><div class="ord-kpi-label">年度訂單總額</div><div class="ord-kpi-value" id="ord-kpi-total">-</div></div>
+        <div class="ord-kpi"><div class="ord-kpi-label">合約筆數</div><div class="ord-kpi-value" id="ord-kpi-count">-</div></div>
+        <div class="ord-kpi"><div class="ord-kpi-label">平均每筆</div><div class="ord-kpi-value" id="ord-kpi-avg">-</div></div>
+      </div>
+      <!-- Monthly trend chart -->
+      <div class="ord-stat-card" style="margin-bottom:16px">
+        <div class="ord-stat-title">📅 月度訂單趨勢</div>
+        <div class="ord-monthly-chart" id="ord-monthly-chart"></div>
+      </div>
+      <!-- 2-col grid: transaction_type, contract_type, industry, product_line -->
+      <div class="ord-analysis-grid" id="ord-analysis-grid"></div>
     </div>
   </div>
 </div>
@@ -1331,9 +1625,10 @@ function buildTableHeader() {
   tr.innerHTML = `<th class="left" style="width:34%">業務BU / 客戶名稱 / 銷售案名稱</th>`
     + `<th style="min-width:88px">預計結案日</th>`
     + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
-    + `<th style="min-width:90px">總計</th>`;
+    + `<th style="min-width:90px">總計</th>`
+    + `<th style="width:44px;text-align:center">追蹤</th>`;
   const ths = tr.querySelectorAll('th');
-  CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; }); // offset by 2: name + date
+  CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; });
 }
 
 function buildDeptTableHeader() {
@@ -1342,7 +1637,8 @@ function buildDeptTableHeader() {
   tr.innerHTML = `<th class="left" style="width:34%">業務部門 / 客戶名稱 / 銷售案名稱</th>`
     + `<th style="min-width:88px">預計結案日</th>`
     + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
-    + `<th style="min-width:90px">總計</th>`;
+    + `<th style="min-width:90px">總計</th>`
+    + `<th style="width:44px;text-align:center">追蹤</th>`;
   const ths = tr.querySelectorAll('th');
   CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; });
 }
@@ -1353,7 +1649,8 @@ function buildSupportBuTableHeader() {
   tr.innerHTML = `<th class="left" style="width:34%">支援BU / 客戶名稱 / 銷售案名稱</th>`
     + `<th style="min-width:88px">預計結案日</th>`
     + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
-    + `<th style="min-width:90px">總計</th>`;
+    + `<th style="min-width:90px">總計</th>`
+    + `<th style="width:44px;text-align:center">追蹤</th>`;
   const ths = tr.querySelectorAll('th');
   CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; });
 }
@@ -1364,7 +1661,8 @@ function buildSupportDeptTableHeader() {
   tr.innerHTML = `<th class="left" style="width:34%">支援部門 / 客戶名稱 / 銷售案名稱</th>`
     + `<th style="min-width:88px">預計結案日</th>`
     + CONF_ORDER.map(() => `<th style="min-width:80px"></th>`).join('')
-    + `<th style="min-width:90px">總計</th>`;
+    + `<th style="min-width:90px">總計</th>`
+    + `<th style="width:44px;text-align:center">追蹤</th>`;
   const ths = tr.querySelectorAll('th');
   CONF_ORDER.forEach((c, i) => { ths[i + 2].textContent = c; });
 }
@@ -1455,7 +1753,8 @@ function buildDeptTable() {
                 const a = caseAmt(cas, c);
                 return `<td class="${a && active.has(c) ? 'num' : 'dim'}" id="dcc-${safe(dept)}-${ci}-${safe(c)}">${active.has(c) && a ? fmt(a) : '-'}</td>`;
               }).join('')
-            + `<td class="num" id="dct-${safe(dept)}-${ci}">${fmt(caseTotalActive(cas))}</td>`;
+            + `<td class="num" id="dct-${safe(dept)}-${ci}">${fmt(caseTotalActive(cas))}</td>`
+            + `<td style="text-align:center;padding:4px" onclick="event.stopPropagation()"><button class="opp-trk-btn" data-no="${escAttr(cas.no)}" data-case="${escAttr(cas.case)}" data-cust="${escAttr(cas.cust)}" onclick="openOppTracking(this)">📝<span class="opp-trk-badge" id="otrk-${safe(cas.no)}"></span></button></td>`;
           tbody.appendChild(cTr);
 
           /* Item rows */
@@ -1669,7 +1968,8 @@ function buildTable() {
                 const a = caseAmt(cas, c);
                 return `<td class="${a && active.has(c) ? 'num' : 'dim'}" id="cc-${bu}-${ci}-${safe(c)}">${active.has(c) && a ? fmt(a) : '-'}</td>`;
               }).join('')
-            + `<td class="num" id="ct-${bu}-${ci}">${fmt(caseTotalActive(cas))}</td>`;
+            + `<td class="num" id="ct-${bu}-${ci}">${fmt(caseTotalActive(cas))}</td>`
+            + `<td style="text-align:center;padding:4px" onclick="event.stopPropagation()"><button class="opp-trk-btn" data-no="${escAttr(cas.no)}" data-case="${escAttr(cas.case)}" data-cust="${escAttr(cas.cust)}" onclick="openOppTracking(this)">📝<span class="opp-trk-badge" id="otrk-${safe(cas.no)}"></span></button></td>`;
           tbody.appendChild(cTr);
 
           /* Item rows */
@@ -1811,7 +2111,8 @@ function buildSupportBuTable() {
                 const a = sBuCaseItemAmt(cas, sbu, c);
                 return `<td class="${a&&active.has(c)?'num':'dim'}" id="scc-${safe(sbu)}-${ci}-${safe(c)}">${active.has(c)&&a?fmt(a):'-'}</td>`;
               }).join('')
-            + `<td class="num" id="sct-${safe(sbu)}-${ci}">${fmt(sBuCaseTotalActive(cas,sbu))}</td>`;
+            + `<td class="num" id="sct-${safe(sbu)}-${ci}">${fmt(sBuCaseTotalActive(cas,sbu))}</td>`
+            + `<td style="text-align:center;padding:4px" onclick="event.stopPropagation()"><button class="opp-trk-btn" data-no="${escAttr(cas.no)}" data-case="${escAttr(cas.case)}" data-cust="${escAttr(cas.cust)}" onclick="openOppTracking(this)">📝<span class="opp-trk-badge" id="otrk-${safe(cas.no)}"></span></button></td>`;
           tbody.appendChild(cTr);
 
           /* Item rows — only items belonging to this sbu */
@@ -1953,7 +2254,8 @@ function buildSupportDeptTable() {
                 const a = sDeptCaseItemAmt(cas, sdept, c);
                 return `<td class="${a&&active.has(c)?'num':'dim'}" id="sdcc-${safe(sdept)}-${ci}-${safe(c)}">${active.has(c)&&a?fmt(a):'-'}</td>`;
               }).join('')
-            + `<td class="num" id="sdct-${safe(sdept)}-${ci}">${fmt(sDeptCaseTotalActive(cas,sdept))}</td>`;
+            + `<td class="num" id="sdct-${safe(sdept)}-${ci}">${fmt(sDeptCaseTotalActive(cas,sdept))}</td>`
+            + `<td style="text-align:center;padding:4px" onclick="event.stopPropagation()"><button class="opp-trk-btn" data-no="${escAttr(cas.no)}" data-case="${escAttr(cas.case)}" data-cust="${escAttr(cas.cust)}" onclick="openOppTracking(this)">📝<span class="opp-trk-badge" id="otrk-${safe(cas.no)}"></span></button></td>`;
           tbody.appendChild(cTr);
 
           /* Item rows — only items belonging to this sdept */
@@ -2250,10 +2552,14 @@ function toggleSDeptCase(sdept, ci) {
 
 /* ── Dim tab switching ── */
 function switchDimTab(dim) {
-  ['bu','dept','sbu','sdept'].forEach(d => {
+  ['bu','dept','sbu','sdept','orddet'].forEach(d => {
     document.getElementById('dim-' + d).style.display = dim===d ? '' : 'none';
     document.getElementById('dim-tab-' + d).classList.toggle('active', dim===d);
   });
+  // hide the expand-rep-btn for orddet tab (no rep rows in that view)
+  const eb = document.getElementById('expand-rep-btn');
+  if (eb) eb.style.display = dim === 'orddet' ? 'none' : '';
+  if (dim === 'orddet') loadOrderDetail();
 }
 
 /* ── Section collapse/expand ── */
@@ -2548,6 +2854,7 @@ function rebuildAfterFilter() {
   buildSupportDeptTable();
   buildRepTable();
   buildAchieveSection();
+  _renderAllBadges();
   if (searchQ) applySearch();
 }
 
@@ -3036,7 +3343,8 @@ async function checkBackend() {
       document.getElementById('hist-btn').style.display   = '';
       document.getElementById('stt-btn').style.display    = '';
       document.getElementById('quota-btn').style.display  = '';
-      document.getElementById('order-btn').style.display  = '';
+      document.getElementById('order-dropdown').style.display = '';
+      document.getElementById('opp-list-btn').style.display = '';
       await loadLatestIfAvailable();   // ← try to auto-load; stays on upload screen if no history
       loadHistoryBadge();
     }
@@ -3136,6 +3444,7 @@ function applyLoadedData(d) {
   buildLegend(); buildTableHeader(); buildDeptTableHeader(); buildSupportBuTableHeader(); buildSupportDeptTableHeader(); buildRepTableHeader();
   buildCards(); buildBar(); buildTable(); buildDeptTable(); buildSupportBuTable(); buildSupportDeptTable(); buildRepTable();
   buildAchieveSection();
+  loadOppTrackingSummary();
 }
 
 /* ── Toast notification ── */
@@ -3586,16 +3895,24 @@ async function loadQuotas() {
   const data = await resp.json();
   const filtered = data.filter(r => r.dim_type === currentQuotaDimType);
   const tbody = document.getElementById('quota-tbody');
-  tbody.innerHTML = filtered.length === 0
-    ? `<tr><td colspan="4" style="text-align:center;color:#bbb;padding:20px">尚無資料</td></tr>`
-    : filtered.map(r => `<tr>
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:#bbb;padding:20px">尚無資料</td></tr>`;
+  } else {
+    const total = filtered.reduce((s, r) => s + (Number(r.quota) || 0), 0);
+    tbody.innerHTML = filtered.map(r => `<tr>
       <td>${r.dim_name}</td>
       <td>${Number(r.quota).toLocaleString('zh-TW')}</td>
       <td style="color:#888;font-size:11px">${r.updated_at||''}</td>
       <td>
         <button class="mgmt-act-btn mgmt-del-btn" onclick="deleteQuota(${r.id})">🗑</button>
       </td>
-    </tr>`).join('');
+    </tr>`).join('')
+    + `<tr style="background:#eef2fa;font-weight:700;border-top:2px solid #c5d0e8">
+      <td style="color:#1a3a6b">合計</td>
+      <td style="color:#1a3a6b">${total.toLocaleString('zh-TW')}</td>
+      <td colspan="2"></td>
+    </tr>`;
+  }
 }
 
 async function addQuota() {
@@ -3681,6 +3998,758 @@ async function deleteOrder(id) {
   await fetch(`/api/orders/${id}`, { method: 'DELETE' });
   loadOrders();
   buildAchieveSection();
+}
+
+/* ════════════════════════════════════════════
+   訂單下拉選單
+════════════════════════════════════════════ */
+function toggleOrderMenu(e) {
+  e.stopPropagation();
+  const menu = document.getElementById('order-menu');
+  menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+}
+function closeOrderMenu() {
+  const menu = document.getElementById('order-menu');
+  if (menu) menu.style.display = 'none';
+}
+document.addEventListener('click', () => closeOrderMenu());
+
+/* ════════════════════════════════════════════
+   訂單管理 (loadOrders 加入來源標示 + 上傳 banner)
+════════════════════════════════════════════ */
+async function loadOrders() {
+  const year = document.getElementById('order-year-sel').value;
+  // 同時抓訂單資料與最近一次上傳記錄
+  const [resp, uplResp] = await Promise.all([
+    fetch(`/api/orders?year=${year}`),
+    fetch('/api/order_uploads')
+  ]);
+  const data    = await resp.json();
+  const uploads = await uplResp.json();
+
+  // 上傳 banner
+  const banner = document.getElementById('order-upload-banner');
+  if (uploads && uploads.length > 0) {
+    const u = uploads[0];
+    banner.style.display = '';
+    banner.innerHTML = `<div class="ord-source-info">📥 最近上傳：<b>${u.filename}</b>　${u.uploaded_at}　共 ${u.row_count} 筆</div>`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  const filtered = data.filter(r => r.dim_type === currentOrderDimType);
+  const tbody = document.getElementById('order-tbody');
+  tbody.innerHTML = filtered.length === 0
+    ? `<tr><td colspan="5" style="text-align:center;color:#bbb;padding:20px">尚無資料</td></tr>`
+    : filtered.map(r => {
+        const srcBadge = r.source === 'upload'
+          ? `<span class="src-badge upload">上傳</span>`
+          : `<span class="src-badge manual">手動</span>`;
+        return `<tr>
+          <td>${r.dim_name}</td>
+          <td class="num">${Number(r.amount).toLocaleString('zh-TW')}</td>
+          <td>${srcBadge}</td>
+          <td style="color:#888;font-size:11px">${r.updated_at||''}</td>
+          <td>
+            <button class="mgmt-act-btn mgmt-del-btn" onclick="deleteOrder(${r.id})">🗑</button>
+          </td>
+        </tr>`;
+      }).join('');
+}
+
+/* ════════════════════════════════════════════
+   訂單上傳 Modal
+════════════════════════════════════════════ */
+let _ordUplFile = null;
+
+function openOrderUpload() {
+  _ordUplFile = null;
+  document.getElementById('ord-upl-drop').classList.remove('dragover');
+  document.getElementById('ord-upl-info').style.display = 'none';
+  document.getElementById('ord-upl-info').textContent = '';
+  document.getElementById('ord-upl-err').style.display = 'none';
+  document.getElementById('ord-upl-submit').disabled = true;
+  document.getElementById('ord-upl-input').value = '';
+  document.getElementById('ord-upl-modal').classList.add('open');
+  loadOrderUploads();
+}
+
+async function loadOrderUploads() {
+  const resp = await fetch('/api/order_uploads');
+  const uploads = await resp.json();
+  const body = document.getElementById('ord-upl-hist-body');
+  if (!uploads || uploads.length === 0) {
+    body.innerHTML = '<div class="ord-upl-history-empty">尚無上傳記錄</div>';
+    return;
+  }
+  body.innerHTML = `<table class="ord-upl-hist-table">
+    <thead><tr>
+      <th>檔名</th><th>年度</th><th>筆數</th><th>上傳時間</th><th style="width:60px"></th>
+    </tr></thead>
+    <tbody>
+      ${uploads.map(u => `<tr>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${u.filename}">${u.filename}</td>
+        <td>${u.year || '-'}</td>
+        <td>${u.row_count || 0}</td>
+        <td style="font-size:11px;color:#888">${(u.uploaded_at||'').substring(0,16)}</td>
+        <td><button class="ord-upl-hist-del" onclick="deleteOrderUpload(${u.id},'${(u.filename||'').replace(/'/g,"\\'")}')">🗑 刪除</button></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+async function deleteOrderUpload(id, filename) {
+  if (!confirm(`確定刪除「${filename}」的全部上傳資料？\n此操作將同步清除明細紀錄及彙總訂單資料。`)) return;
+  const resp = await fetch(`/api/order_uploads/${id}`, { method: 'DELETE' });
+  const result = await resp.json();
+  if (result.ok) {
+    showToast('✅ 已刪除上傳記錄及對應訂單資料');
+    loadOrderUploads();
+    buildAchieveSection();
+    // 刷新訂單明細 tab
+    if (document.getElementById('dim-orddet').style.display !== 'none') {
+      _ordDetailData = null;
+      loadOrderDetail();
+    }
+  } else {
+    alert('刪除失敗：' + (result.error || '未知錯誤'));
+  }
+}
+function closeOrderUpload() {
+  document.getElementById('ord-upl-modal').classList.remove('open');
+}
+
+// file input change
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('ord-upl-input');
+  if (inp) inp.addEventListener('change', e => {
+    if (e.target.files && e.target.files[0]) ordUplSetFile(e.target.files[0]);
+  });
+  // drag-drop
+  const drop = document.getElementById('ord-upl-drop');
+  if (drop) {
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+    drop.addEventListener('drop', e => {
+      e.preventDefault();
+      drop.classList.remove('dragover');
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) ordUplSetFile(f);
+    });
+  }
+});
+
+function ordUplSetFile(file) {
+  _ordUplFile = file;
+  const info = document.getElementById('ord-upl-info');
+  info.style.display = '';
+  const kb = (file.size / 1024).toFixed(1);
+  info.innerHTML = `📄 <b>${file.name}</b>　${kb} KB`;
+  document.getElementById('ord-upl-err').style.display = 'none';
+  document.getElementById('ord-upl-submit').disabled = false;
+}
+
+async function submitOrderUpload() {
+  if (!_ordUplFile) return;
+  const btn = document.getElementById('ord-upl-submit');
+  btn.disabled = true;
+  btn.textContent = '上傳中…';
+  document.getElementById('ord-upl-err').style.display = 'none';
+  try {
+    const fd = new FormData();
+    fd.append('file', _ordUplFile);
+    const resp = await fetch('/api/orders/upload', { method: 'POST', body: fd });
+    const result = await resp.json();
+    if (!resp.ok || result.error) {
+      throw new Error(result.error || '上傳失敗');
+    }
+    closeOrderUpload();
+    showToast(`✅ 匯入成功：${result.filename}，共 ${result.row_count} 筆，年度 ${(result.years||[]).join('/')}`);
+    buildAchieveSection();
+    loadOrderUploads();
+    // 若訂單明細 tab 目前開著，立即刷新
+    if (document.getElementById('dim-orddet').style.display !== 'none') {
+      loadOrderDetail();
+    }
+  } catch (err) {
+    const errDiv = document.getElementById('ord-upl-err');
+    errDiv.style.display = '';
+    errDiv.textContent = '❌ ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '上傳並匯入';
+  }
+}
+
+/* ════════════════════════════════════════════
+   訂單明細 Tab
+════════════════════════════════════════════ */
+let _ordDetailData = null;
+
+async function loadOrderDetail() {
+  const yearSel = document.getElementById('orddet-year-sel');
+  // 先補充年份清單（如果還是空的）
+  if (!yearSel.options.length) {
+    const uResp = await fetch('/api/order_uploads');
+    const uploads = await uResp.json();
+    if (!uploads || uploads.length === 0) {
+      document.getElementById('ord-detail-content').innerHTML =
+        '<div class="ord-detail-empty">尚未上傳訂單清單，請點選上方「訂單 ▾ → 上傳訂單清單」</div>';
+      return;
+    }
+    // 從最新上傳取得年份
+    const years = [...new Set(uploads.map(u => u.year).filter(Boolean))].sort((a,b)=>b-a);
+    yearSel.innerHTML = years.map(y => `<option value="${y}">${y} 年</option>`).join('');
+    // 月份清單
+    const monthSel = document.getElementById('orddet-month-sel');
+    monthSel.innerHTML = `<option value="0">全部月份</option>` +
+      [1,2,3,4,5,6,7,8,9,10,11,12].map(m=>`<option value="${m}">${m} 月</option>`).join('');
+  }
+
+  const year  = parseInt(yearSel.value) || 0;
+  const month = parseInt(document.getElementById('orddet-month-sel').value) || 0;
+  const dim   = document.getElementById('orddet-dim-sel').value;
+
+  const resp = await fetch(`/api/orders/detail?year=${year}&month=${month}&dim=${dim}`);
+  const data = await resp.json();
+  _ordDetailData = data;
+  buildOrderDetailTab();
+}
+
+function buildOrderDetailTab() {
+  const container = document.getElementById('ord-detail-content');
+  const data = _ordDetailData;
+
+  // 隱藏展開/收合按鈕（無資料時）
+  document.getElementById('orddet-toggle-all-btn').style.display = 'none';
+
+  if (!data || !data.records || data.records.length === 0) {
+    container.innerHTML = '<div class="ord-detail-empty">此條件下無訂單資料</div>';
+    return;
+  }
+
+  const dim = document.getElementById('orddet-dim-sel').value;
+  const dimField = dim === 'support_bu' ? 'support_bu' : 'support_dept';
+  const dimLabel = dim === 'support_bu' ? '支援BU' : '支援部門';
+  const COL_SPAN = 11;
+
+  // 三層聚合：年月 → 維度 → 合約編號
+  const byMonth = {};
+  for (const rec of data.records) {
+    const ym = `${rec.register_year}/${String(rec.register_month).padStart(2,'0')}`;
+    if (!byMonth[ym]) byMonth[ym] = {};
+    const dKey = rec[dimField] || '(未分類)';
+    if (!byMonth[ym][dKey]) byMonth[ym][dKey] = {};
+    const cKey = rec.contract_no || rec.contract_name || '(未知)';
+    if (!byMonth[ym][dKey][cKey]) {
+      byMonth[ym][dKey][cKey] = {
+        contract_no:      rec.contract_no      || '',
+        contract_name:    rec.contract_name    || '',
+        cust_name:        rec.cust_name        || '',
+        register_date:    rec.register_date    || '',
+        biz_bu:           rec.biz_bu           || '',
+        biz_rep:          rec.biz_rep          || '',
+        transaction_type: rec.transaction_type || '',
+        product_line:     rec.product_line     || '',
+        contract_type:    rec.contract_type    || '',
+        amount_pretax:    0,
+      };
+    }
+    byMonth[ym][dKey][cKey].amount_pretax += rec.amount_pretax || 0;
+  }
+
+  const fmtAmt = v => Number(v||0).toLocaleString('zh-TW');
+  const sortedMonths = Object.keys(byMonth).sort().reverse();
+
+  // 預先計算各月合計（供 header 使用）
+  const monthTotals = {};
+  for (const ym of sortedMonths) {
+    let t = 0;
+    for (const dKey of Object.keys(byMonth[ym]))
+      for (const cKey of Object.keys(byMonth[ym][dKey]))
+        t += byMonth[ym][dKey][cKey].amount_pretax;
+    monthTotals[ym] = t;
+  }
+
+  let html = `<div style="overflow-x:auto"><table class="ord-detail-table">
+    <thead><tr>
+      <th style="width:8%">登記日</th>
+      <th style="width:13%">客戶名稱</th>
+      <th style="width:16%">合約名稱</th>
+      <th style="width:9%" class="num">金額（未稅）</th>
+      <th style="width:7%">業務BU</th>
+      <th style="width:7%">業務代表</th>
+      <th style="width:9%">合約編號</th>
+      <th style="width:7%">交易型態</th>
+      <th style="width:8%">${dimLabel}</th>
+      <th style="width:8%">產品線</th>
+      <th style="width:8%">合約類別</th>
+    </tr></thead><tbody>`;
+
+  let grandTotal = 0, grandCount = 0;
+
+  sortedMonths.forEach((ym, mIdx) => {
+    const isFirst  = mIdx === 0;
+    const hiddenAttr = isFirst ? '' : ' style="display:none"';
+    const icon     = isFirst ? '▼' : '▶';
+    const monthTotal = monthTotals[ym];
+    grandTotal += monthTotal;
+
+    // 月份 header（可點擊收合）
+    html += `<tr class="month-header" onclick="toggleDetailMonth(${mIdx})" style="cursor:pointer" id="orddet-mh-${mIdx}">
+      <td colspan="${COL_SPAN}"><span id="orddet-mi-${mIdx}">${icon}</span> 📅 ${ym}　月合計：${fmtAmt(monthTotal)}</td>
+    </tr>`;
+
+    // 明細列（帶 data-det-month-idx）
+    for (const dKey of Object.keys(byMonth[ym]).sort()) {
+      let dTotal = 0;
+      for (const cKey of Object.keys(byMonth[ym][dKey]).sort()) {
+        const c = byMonth[ym][dKey][cKey];
+        dTotal += c.amount_pretax;
+        grandCount++;
+        html += `<tr data-det-month-idx="${mIdx}"${hiddenAttr}>
+          <td style="font-size:11px">${c.register_date}</td>
+          <td style="font-size:11px">${c.cust_name}</td>
+          <td style="font-size:11px">${c.contract_name}</td>
+          <td class="num">${fmtAmt(c.amount_pretax)}</td>
+          <td style="font-size:11px">${c.biz_bu}</td>
+          <td style="font-size:11px">${c.biz_rep}</td>
+          <td style="font-size:11px;color:#888">${c.contract_no}</td>
+          <td style="font-size:11px">${c.transaction_type}</td>
+          <td style="font-size:11px">${dKey}</td>
+          <td style="font-size:11px">${c.product_line}</td>
+          <td style="font-size:11px">${c.contract_type}</td>
+        </tr>`;
+      }
+      // 維度小計（多個維度時）
+      if (Object.keys(byMonth[ym]).length > 1) {
+        html += `<tr class="bu-subtotal" data-det-month-idx="${mIdx}"${hiddenAttr}>
+          <td colspan="3">${dimLabel}：${dKey} 小計</td>
+          <td class="num">${fmtAmt(dTotal)}</td>
+          <td colspan="${COL_SPAN - 4}"></td>
+        </tr>`;
+      }
+    }
+
+    // 月份合計列（同樣收合）
+    html += `<tr class="month-total" data-det-month-idx="${mIdx}"${hiddenAttr}>
+      <td colspan="3">${ym} 月份合計</td>
+      <td class="num">${fmtAmt(monthTotal)}</td>
+      <td colspan="${COL_SPAN - 4}"></td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  container.innerHTML = html;
+
+  // 顯示展開/收合按鈕（有資料時），初始狀態：第一個月展開 → 顯示「收合全部」
+  const toggleBtn = document.getElementById('orddet-toggle-all-btn');
+  toggleBtn.style.display = '';
+  toggleBtn.textContent = sortedMonths.length > 1 ? '▶ 收合全部' : '';
+
+  // 右上方資訊
+  const sourceInfo = document.getElementById('ord-source-info-tab');
+  if (sourceInfo) {
+    sourceInfo.innerHTML = `<span class="ord-source-info">共 ${grandCount} 份合約　合計 ${fmtAmt(grandTotal)}</span>`;
+  }
+}
+
+/* ── 訂單明細月份收合控制 ── */
+function toggleDetailMonth(idx) {
+  const rows     = document.querySelectorAll(`[data-det-month-idx="${idx}"]`);
+  const icon     = document.getElementById(`orddet-mi-${idx}`);
+  const isHidden = rows.length > 0 && rows[0].style.display === 'none';
+  rows.forEach(r => r.style.display = isHidden ? '' : 'none');
+  if (icon) icon.textContent = isHidden ? '▼' : '▶';
+  // 同步全部按鈕文字：若還有任何列可見 → 顯示「收合全部」
+  _syncToggleAllBtn();
+}
+
+function toggleAllDetailMonths() {
+  const allRows   = document.querySelectorAll('[data-det-month-idx]');
+  const anyVisible = [...allRows].some(r => r.style.display !== 'none');
+  if (anyVisible) {
+    allRows.forEach(r => r.style.display = 'none');
+    document.querySelectorAll('[id^="orddet-mi-"]').forEach(i => i.textContent = '▶');
+    document.getElementById('orddet-toggle-all-btn').textContent = '▼ 展開全部';
+  } else {
+    allRows.forEach(r => r.style.display = '');
+    document.querySelectorAll('[id^="orddet-mi-"]').forEach(i => i.textContent = '▼');
+    document.getElementById('orddet-toggle-all-btn').textContent = '▶ 收合全部';
+  }
+}
+
+function _syncToggleAllBtn() {
+  const allRows    = document.querySelectorAll('[data-det-month-idx]');
+  const anyVisible = [...allRows].some(r => r.style.display !== 'none');
+  const btn = document.getElementById('orddet-toggle-all-btn');
+  if (btn) btn.textContent = anyVisible ? '▶ 收合全部' : '▼ 展開全部';
+}
+
+/* ════════════════════════════════════════════
+   訂單分析 Modal
+════════════════════════════════════════════ */
+async function openOrderAnalysis() {
+  // 填充年份選單
+  const ySel = document.getElementById('ord-analysis-year-sel');
+  if (!ySel.options.length) {
+    const uResp = await fetch('/api/order_uploads');
+    const uploads = await uResp.json();
+    const years = uploads && uploads.length
+      ? [...new Set(uploads.map(u => u.year).filter(Boolean))].sort((a,b)=>b-a)
+      : [new Date().getFullYear()];
+    ySel.innerHTML = years.map(y => `<option value="${y}">${y} 年</option>`).join('');
+  }
+  document.getElementById('ord-analysis-modal').classList.add('open');
+  buildOrderAnalysis();
+}
+function closeOrderAnalysis() {
+  document.getElementById('ord-analysis-modal').classList.remove('open');
+}
+
+async function buildOrderAnalysis() {
+  const year = document.getElementById('ord-analysis-year-sel').value;
+  const resp = await fetch(`/api/orders/analysis?year=${year}`);
+  const d    = await resp.json();
+
+  if (!d || !d.grand_total && d.grand_total !== 0) {
+    document.getElementById('ord-analysis-grid').innerHTML =
+      '<div class="ord-detail-empty" style="grid-column:1/-1">尚未上傳訂單清單</div>';
+    return;
+  }
+
+  const fmtM  = v => (v/1e6).toFixed(2) + ' M';
+  const fmtAmt = v => Number(v||0).toLocaleString('zh-TW');
+
+  // KPIs
+  document.getElementById('ord-kpi-total').textContent = fmtM(d.grand_total);
+  document.getElementById('ord-kpi-count').textContent = d.grand_count.toLocaleString('zh-TW');
+  document.getElementById('ord-kpi-avg').textContent   = d.grand_count
+    ? fmtM(d.grand_total / d.grand_count) : '-';
+
+  // Monthly chart
+  const months = Array.from({length:12}, (_,i) => i+1);
+  const byMon  = {};
+  (d.monthly||[]).forEach(m => byMon[m.month] = m);
+  const maxVal = Math.max(...months.map(m => byMon[m] ? byMon[m].total : 0), 1);
+  const chartHtml = `<div class="ord-monthly-bars">` +
+    months.map(m => {
+      const rec   = byMon[m];
+      const total = rec ? rec.total : 0;
+      const pct   = Math.round((total / maxVal) * 110);
+      return `<div class="ord-monthly-col" title="${m}月: ${fmtAmt(total)}">
+        <div class="ord-monthly-amt" style="font-size:9px">${total>0?fmtM(total):''}</div>
+        <div class="ord-monthly-bar" style="height:${pct}px"></div>
+        <div class="ord-monthly-label">${m}月</div>
+      </div>`;
+    }).join('') + `</div>`;
+  document.getElementById('ord-monthly-chart').innerHTML = chartHtml;
+
+  // Stat cards
+  function statCard(title, items) {
+    if (!items || !items.length) return '';
+    const maxAmt = Math.max(...items.map(i=>i.total), 1);
+    return `<div class="ord-stat-card">
+      <div class="ord-stat-title">${title}</div>
+      <table class="ord-stat-table">
+        ${items.slice(0,10).map(i => {
+          const pct = Math.round((i.total/maxAmt)*100);
+          return `<tr>
+            <td>${i.name||'(未分類)'}</td>
+            <td><div class="ord-stat-bar-wrap"><div class="ord-stat-bar"><div class="ord-stat-bar-fill" style="width:${pct}%"></div></div></div></td>
+            <td class="amt">${fmtAmt(i.total)}</td>
+            <td class="cnt">${i.cnt} 筆</td>
+          </tr>`;
+        }).join('')}
+      </table>
+    </div>`;
+  }
+
+  const grid = document.getElementById('ord-analysis-grid');
+  grid.innerHTML =
+    statCard('🔄 交易型態', d.transaction_type) +
+    statCard('📄 合約類別', d.contract_type) +
+    statCard('🏭 客戶行業別', d.industry) +
+    statCard('💡 產品線', d.product_line) +
+    statCard('🏢 支援BU', d.support_bu) +
+    statCard('💼 業務BU', d.biz_bu);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Opportunity Tracking
+   ═══════════════════════════════════════════════════════════ */
+
+function escAttr(s) { return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;'); }
+
+/* ── Badge summary ── */
+let _oppSummary = {}; // case_no → {total, done}
+
+async function loadOppTrackingSummary() {
+  try {
+    const res = await fetch('/api/opp_tracking/summary');
+    const rows = await res.json();
+    _oppSummary = {};
+    rows.forEach(r => { _oppSummary[r.case_no] = { total: r.total, done: r.done }; });
+    _renderAllBadges();
+    // update global list badge
+    const pending = rows.reduce((s,r) => s + (r.total - r.done), 0);
+    const listBadge = document.getElementById('opp-list-badge');
+    if (listBadge) {
+      if (pending > 0) { listBadge.textContent = pending; listBadge.style.display = ''; }
+      else { listBadge.style.display = 'none'; }
+    }
+  } catch(e) {}
+}
+
+function _renderAllBadges() {
+  document.querySelectorAll('[id^="otrk-"]').forEach(el => {
+    const caseNo = el.id.replace('otrk-', '').replace(/_/g, match => {
+      // safe() replaces non-alphanumeric with _, so we can't reverse it perfectly;
+      // instead look up by iterating _oppSummary keys
+      return match;
+    });
+  });
+  // Better: iterate summary and find matching badge by data-no on button
+  Object.entries(_oppSummary).forEach(([caseNo, stat]) => {
+    // There may be multiple badge spans (same case in different tabs), update all
+    document.querySelectorAll(`.opp-trk-btn[data-no="${CSS.escape(caseNo)}"] .opp-trk-badge`).forEach(span => {
+      _applyBadge(span, stat);
+    });
+  });
+  // Clear badges for cases with no tracking
+  document.querySelectorAll('.opp-trk-badge').forEach(span => {
+    const btn = span.closest('.opp-trk-btn');
+    if (!btn) return;
+    const no = btn.dataset.no;
+    if (!_oppSummary[no]) { span.textContent = ''; span.className = 'opp-trk-badge'; }
+  });
+}
+
+function _applyBadge(span, stat) {
+  if (!stat || stat.total === 0) { span.textContent = ''; span.className = 'opp-trk-badge'; return; }
+  const pending = stat.total - stat.done;
+  if (pending > 0) {
+    span.textContent = pending;
+    span.className = 'opp-trk-badge pending';
+  } else {
+    span.textContent = '✓';
+    span.className = 'opp-trk-badge done';
+  }
+}
+
+/* ── Single case modal ── */
+let _oppCurrent = { no: '', caseName: '', custName: '' };
+
+function openOppTracking(btn) {
+  _oppCurrent = { no: btn.dataset.no, caseName: btn.dataset.case, custName: btn.dataset.cust };
+  document.getElementById('opp-trk-modal-sub').textContent =
+    `${_oppCurrent.custName}　｜　${_oppCurrent.caseName}`;
+  document.getElementById('opp-trk-input').value = '';
+  document.getElementById('opp-trk-overlay').classList.add('open');
+  _loadOppItems();
+}
+
+function closeOppTracking() {
+  document.getElementById('opp-trk-overlay').classList.remove('open');
+}
+
+function _oppItemHTML(it) {
+  const doneInfo = it.is_done ? `
+    ${it.done_note ? `<div class="opp-trk-done-info">✍️ ${escAttr(it.done_note)}</div>` : ''}
+    ${it.done_at   ? `<div class="opp-trk-done-at">完成於 ${escAttr(it.done_at)}</div>` : ''}` : '';
+  return `
+    <div class="opp-trk-item" id="opp-trk-item-${it.id}">
+      <input type="checkbox" class="opp-trk-check" ${it.is_done?'checked':''} onchange="toggleOppDone(${it.id},this.checked)">
+      <div class="opp-trk-item-body">
+        <div class="opp-trk-note${it.is_done?' done':''}" id="opp-trk-note-${it.id}">${escAttr(it.note)}</div>
+        <div class="opp-trk-time">建立於 ${it.created_at||''}</div>
+        ${doneInfo}
+        <div class="opp-trk-done-expand" id="opp-trk-done-exp-${it.id}" style="display:none">
+          <div style="font-size:12px;color:#555;margin-bottom:6px">完成說明（選填）：</div>
+          <textarea class="opp-trk-done-textarea" id="opp-trk-done-inp-${it.id}" rows="2" placeholder="例：客戶已確認，轉交合約部門…"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();confirmOppDone(${it.id});}"></textarea>
+          <div class="opp-trk-done-expand-btns">
+            <button class="opp-trk-skip-btn" onclick="skipOppDone(${it.id})">略過</button>
+            <button class="opp-trk-confirm-btn" onclick="confirmOppDone(${it.id})">確認完成</button>
+          </div>
+        </div>
+      </div>
+      <button class="opp-trk-del" onclick="deleteOppItem(${it.id})" title="刪除">✕</button>
+    </div>`;
+}
+
+async function _loadOppItems() {
+  const body = document.getElementById('opp-trk-modal-body');
+  body.innerHTML = '<div class="opp-trk-empty">載入中…</div>';
+  const res = await fetch(`/api/opp_tracking?case_no=${encodeURIComponent(_oppCurrent.no)}`);
+  const items = await res.json();
+  if (!items.length) { body.innerHTML = '<div class="opp-trk-empty">尚無追蹤記錄，在下方輸入並新增</div>'; return; }
+  body.innerHTML = items.map(_oppItemHTML).join('');
+}
+
+async function addOppTracking() {
+  const input = document.getElementById('opp-trk-input');
+  const note = input.value.trim();
+  if (!note) return;
+  input.value = '';
+  await fetch('/api/opp_tracking', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ case_no: _oppCurrent.no, case_name: _oppCurrent.caseName, cust_name: _oppCurrent.custName, note })
+  });
+  await _loadOppItems();
+  await loadOppTrackingSummary();
+}
+
+async function toggleOppDone(id, isDone) {
+  if (isDone) {
+    // Show inline expand — don't save yet
+    const exp = document.getElementById(`opp-trk-done-exp-${id}`);
+    if (exp) {
+      exp.style.display = '';
+      const ta = document.getElementById(`opp-trk-done-inp-${id}`);
+      if (ta) setTimeout(() => ta.focus(), 50);
+    }
+  } else {
+    // Un-mark done: clear done fields and save immediately
+    await _saveDone(id, false, '', '');
+  }
+}
+
+async function confirmOppDone(id) {
+  const ta = document.getElementById(`opp-trk-done-inp-${id}`);
+  const note = ta ? ta.value.trim() : '';
+  const now = _nowStr();
+  await _saveDone(id, true, note, now);
+}
+
+async function skipOppDone(id) {
+  await _saveDone(id, true, '', _nowStr());
+}
+
+function _nowStr() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+async function _saveDone(id, isDone, doneNote, doneAt) {
+  await fetch(`/api/opp_tracking/${id}`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ is_done: isDone ? 1 : 0, done_note: doneNote, done_at: doneAt })
+  });
+  await _loadOppItems();
+  await loadOppTrackingSummary();
+}
+
+async function deleteOppItem(id) {
+  await fetch(`/api/opp_tracking/${id}`, { method: 'DELETE' });
+  const el = document.getElementById(`opp-trk-item-${id}`);
+  if (el) el.remove();
+  const body = document.getElementById('opp-trk-modal-body');
+  if (body && !body.querySelector('.opp-trk-item'))
+    body.innerHTML = '<div class="opp-trk-empty">尚無追蹤記錄，在下方輸入並新增</div>';
+  await loadOppTrackingSummary();
+}
+
+/* ── Global tracking list modal ── */
+let _oppListTab = 0; // 0=未完成, 1=全部, 2=已完成
+
+function openOppList() {
+  document.getElementById('opp-list-overlay').classList.add('open');
+  _oppListTab = 0;
+  [0,1,2].forEach(i => document.getElementById(`opp-list-tab-${i}`).classList.toggle('active', i===0));
+  _loadOppList();
+}
+
+function closeOppList() {
+  document.getElementById('opp-list-overlay').classList.remove('open');
+}
+
+function switchOppListTab(idx) {
+  _oppListTab = idx;
+  [0,1,2].forEach(i => document.getElementById(`opp-list-tab-${i}`).classList.toggle('active', i===idx));
+  _loadOppList();
+}
+
+async function _loadOppList() {
+  const body = document.getElementById('opp-list-body');
+  body.innerHTML = '<div class="opp-list-empty">載入中…</div>';
+  const doneParam = _oppListTab === 0 ? '?done=0' : _oppListTab === 2 ? '?done=1' : '';
+  const res = await fetch(`/api/opp_tracking/all${doneParam}`);
+  const items = await res.json();
+  if (!items.length) { body.innerHTML = '<div class="opp-list-empty">無資料</div>'; return; }
+  // Group by case_no
+  const groups = {};
+  const order  = [];
+  items.forEach(it => {
+    if (!groups[it.case_no]) { groups[it.case_no] = { caseName: it.case_name, custName: it.cust_name, items: [] }; order.push(it.case_no); }
+    groups[it.case_no].items.push(it);
+  });
+  body.innerHTML = order.map(cno => {
+    const g = groups[cno];
+    const rows = g.items.map(it => {
+      const doneInfo = it.is_done ? `
+        ${it.done_note ? `<div class="opp-trk-done-info">✍️ ${escAttr(it.done_note)}</div>` : ''}
+        ${it.done_at   ? `<div class="opp-trk-done-at">完成於 ${escAttr(it.done_at)}</div>` : ''}` : '';
+      return `
+      <div class="opp-list-item" id="opp-list-item-${it.id}">
+        <input type="checkbox" class="opp-list-check" ${it.is_done?'checked':''} onchange="toggleOppDoneList(${it.id},this.checked)">
+        <div style="flex:1;min-width:0">
+          <div class="opp-list-note${it.is_done?' done':''}" id="opp-list-note-${it.id}">${escAttr(it.note)}</div>
+          <div class="opp-list-time">建立於 ${it.created_at||''}</div>
+          ${doneInfo}
+          <div class="opp-trk-done-expand" id="opp-list-done-exp-${it.id}" style="display:none">
+            <div style="font-size:12px;color:#555;margin-bottom:6px">完成說明（選填）：</div>
+            <textarea class="opp-trk-done-textarea" id="opp-list-done-inp-${it.id}" rows="2" placeholder="例：客戶已確認，轉交合約部門…"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();confirmOppDoneList(${it.id});}"></textarea>
+            <div class="opp-trk-done-expand-btns">
+              <button class="opp-trk-skip-btn" onclick="skipOppDoneList(${it.id})">略過</button>
+              <button class="opp-trk-confirm-btn" onclick="confirmOppDoneList(${it.id})">確認完成</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="opp-list-case-group">
+      <div class="opp-list-case-header">${escAttr(g.custName)}　｜　${escAttr(g.caseName)}<span class="opp-list-case-no">${escAttr(cno)}</span></div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+async function toggleOppDoneList(id, isDone) {
+  if (isDone) {
+    const exp = document.getElementById(`opp-list-done-exp-${id}`);
+    if (exp) {
+      exp.style.display = '';
+      const ta = document.getElementById(`opp-list-done-inp-${id}`);
+      if (ta) setTimeout(() => ta.focus(), 50);
+    }
+  } else {
+    await _saveDoneList(id, false, '', '');
+  }
+}
+
+async function confirmOppDoneList(id) {
+  const ta = document.getElementById(`opp-list-done-inp-${id}`);
+  const note = ta ? ta.value.trim() : '';
+  await _saveDoneList(id, true, note, _nowStr());
+}
+
+async function skipOppDoneList(id) {
+  await _saveDoneList(id, true, '', _nowStr());
+}
+
+async function _saveDoneList(id, isDone, doneNote, doneAt) {
+  await fetch(`/api/opp_tracking/${id}`, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ is_done: isDone ? 1 : 0, done_note: doneNote, done_at: doneAt })
+  });
+  await loadOppTrackingSummary();
+  setTimeout(_loadOppList, 300);
 }
 </script>
 </body>
