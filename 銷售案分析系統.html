@@ -650,6 +650,46 @@
   .opp-list-close { margin-left:auto; padding:8px 20px; background:#f0f3f8; color:#333; border:none; border-radius:6px; font-size:13px; cursor:pointer; }
   .opp-list-close:hover { background:#e0e5ef; }
   .opp-list-footer { padding:12px 20px; border-top:1px solid #eef0f4; display:flex; justify-content:flex-end; }
+
+  /* ── 銷售案清單 (flat list tab) ── */
+  .cl-toolbar { display:flex; align-items:center; gap:10px; padding:10px 4px 6px; flex-wrap:wrap; }
+  .cl-toolbar-title { font-size:13px; font-weight:700; color:#1a3a6b; }
+  .cl-result-count { font-size:12px; color:#888; }
+  .cl-badge-strip { display:flex; align-items:center; gap:6px; flex-wrap:wrap; padding:0 4px 8px; min-height:28px; }
+  .cl-badge { display:inline-flex; align-items:center; gap:4px; background:#e8edfb; color:#1a3a6b; border-radius:12px; padding:3px 10px 3px 12px; font-size:11px; font-weight:600; }
+  .cl-badge-x { background:none; border:none; color:#1a3a6b; cursor:pointer; font-size:13px; line-height:1; padding:0 0 0 2px; }
+  .cl-badge-x:hover { color:#e53935; }
+  .cl-clear-all { font-size:11px; color:#e53935; border:none; background:none; cursor:pointer; font-weight:600; padding:2px 6px; border-radius:8px; }
+  .cl-clear-all:hover { background:#ffeaea; }
+  .cl-table-wrap { overflow-x:auto; }
+  .cl-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .cl-table thead tr { background:#f0f4ff; }
+  .cl-table th { background:#f0f4ff; padding:8px 10px; text-align:left; font-weight:700; color:#1a3a6b; border-bottom:2px solid #d0d8f0; white-space:nowrap; user-select:none; }
+  .cl-table th.sortable { cursor:pointer; }
+  .cl-table th.sortable:hover { background:#dce5ff; }
+  .cl-table th .cl-sort-icon { margin-left:4px; opacity:0.4; font-size:10px; }
+  .cl-table th.sort-asc .cl-sort-icon,
+  .cl-table th.sort-desc .cl-sort-icon { opacity:1; color:#1a3a6b; }
+  .cl-table th .cl-filter-icon { margin-left:4px; font-size:10px; cursor:pointer; opacity:0.5; }
+  .cl-table th .cl-filter-icon:hover,
+  .cl-table th .cl-filter-icon.active { opacity:1; color:#e67e22; }
+  .cl-table td { padding:7px 10px; border-bottom:1px solid #eef0f4; color:#333; vertical-align:middle; }
+  .cl-table tbody tr:hover { background:#f8faff; }
+  .cl-table .cl-amt { text-align:right; font-weight:600; color:#1a3a6b; font-family:monospace; font-size:11px; }
+  .cl-table .cl-date { color:#555; white-space:nowrap; }
+  .cl-table .cl-conf-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:700; }
+  .cl-table .cl-empty { text-align:center; color:#bbb; font-size:13px; padding:32px; }
+  /* Filter dropdown panel */
+  .cl-filter-panel { position:absolute; z-index:500; background:white; border:1px solid #d0d8f0; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.15); padding:10px; min-width:180px; }
+  .cl-filter-panel-inner { max-height:220px; overflow-y:auto; margin-bottom:8px; }
+  .cl-filter-item { display:flex; align-items:center; gap:7px; padding:4px 2px; cursor:pointer; font-size:12px; color:#333; border-radius:4px; }
+  .cl-filter-item:hover { background:#f0f4ff; }
+  .cl-filter-item input[type=checkbox] { accent-color:#1a3a6b; width:13px; height:13px; flex-shrink:0; }
+  .cl-filter-ctrl { display:flex; gap:6px; margin-top:8px; border-top:1px solid #eef0f4; padding-top:8px; }
+  .cl-filter-all-btn { font-size:11px; color:#1a3a6b; border:none; background:none; cursor:pointer; padding:3px 6px; border-radius:4px; }
+  .cl-filter-all-btn:hover { background:#e8edfb; }
+  .cl-filter-apply-btn { flex:1; padding:5px 10px; background:#1a3a6b; color:white; border:none; border-radius:5px; font-size:12px; font-weight:600; cursor:pointer; }
+  .cl-filter-apply-btn:hover { background:#2c5aa0; }
 </style>
 </head>
 <body>
@@ -757,6 +797,18 @@
           </div>
         </div>
       </div>
+      <span class="filter-label" style="margin-left:8px">📦 產品線：</span>
+      <div class="multi-select">
+        <div class="ms-trigger" id="prodline-trigger" onclick="toggleMsPanel('prodline')">
+          <span class="ms-label">全選</span>
+        </div>
+        <div class="ms-panel" id="prodline-panel">
+          <div class="ms-panel-head">
+            <a onclick="msAll('prodline')">全選</a>
+            <a onclick="msNone('prodline')">全消</a>
+          </div>
+        </div>
+      </div>
       <button class="filter-btn filter-btn-none" style="margin-left:auto" onclick="clearAllFilters()">清除篩選</button>
     </div>
 
@@ -813,6 +865,7 @@
           <button class="dim-tab"        id="dim-tab-dept"     onclick="switchDimTab('dept')">業務部門維度</button>
           <button class="dim-tab"        id="dim-tab-sbu"      onclick="switchDimTab('sbu')">支援BU維度</button>
           <button class="dim-tab"        id="dim-tab-sdept"    onclick="switchDimTab('sdept')">支援部門維度</button>
+          <button class="dim-tab"        id="dim-tab-caselist" onclick="switchDimTab('caselist')">📊 銷售案清單</button>
           <button class="dim-tab"        id="dim-tab-orddet"   onclick="switchDimTab('orddet')">📋 訂單明細</button>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
@@ -868,6 +921,30 @@
             </div>
           </div>
           <div id="ord-detail-content"><div class="ord-detail-empty">尚未上傳訂單清單，請點選上方「訂單 ▾ → 上傳訂單清單」</div></div>
+        </div>
+        <div id="dim-caselist" style="display:none;padding:4px 0">
+          <div class="cl-toolbar">
+            <span class="cl-toolbar-title">📊 銷售案清單</span>
+            <span class="cl-result-count" id="cl-result-count"></span>
+          </div>
+          <div class="cl-badge-strip" id="cl-badge-strip"></div>
+          <div class="cl-table-wrap">
+            <table class="cl-table">
+              <thead>
+                <tr>
+                  <th style="min-width:120px">客戶名稱</th>
+                  <th style="min-width:160px">銷售案名稱</th>
+                  <th class="sortable" id="cl-th-date" onclick="clSort('date')" style="min-width:90px">結案日 <span class="cl-sort-icon">↑</span></th>
+                  <th class="sortable" id="cl-th-conf" onclick="clSort('conf')" style="min-width:80px">信心度 <span class="cl-sort-icon">↕</span><span class="cl-filter-icon" id="cl-fi-conf" onclick="event.stopPropagation();clOpenFilter('conf',this)">▼</span></th>
+                  <th class="sortable cl-amt" id="cl-th-amt" onclick="clSort('amt')" style="min-width:90px">總計 <span class="cl-sort-icon">↕</span></th>
+                  <th class="sortable" id="cl-th-bu"   onclick="clSort('bu')"   style="min-width:90px">業務BU <span class="cl-sort-icon">↕</span><span class="cl-filter-icon" id="cl-fi-bu"   onclick="event.stopPropagation();clOpenFilter('bu',this)">▼</span></th>
+                  <th class="sortable" id="cl-th-rep"  onclick="clSort('rep')"  style="min-width:80px">業務代表 <span class="cl-sort-icon">↕</span><span class="cl-filter-icon" id="cl-fi-rep"  onclick="event.stopPropagation();clOpenFilter('rep',this)">▼</span></th>
+                  <th style="min-width:48px;text-align:center">追蹤</th>
+                </tr>
+              </thead>
+              <tbody id="cl-tbody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
@@ -1160,6 +1237,8 @@ let active           = new Set();
 let activeQuarters   = new Set();   // empty = all pass
 let activeSalesSet   = new Set();   // empty = all pass
 let activeSbuSet     = new Set();   // empty = all pass
+let activeProdLineSet = new Set();  // empty = all pass
+let ALL_PROD_LINES   = [];
 let allRepsExpanded  = false;
 let searchQ          = '';
 let fileName         = '';
@@ -1236,6 +1315,10 @@ function casePasses(cas) {
   if (activeSbuSet.size > 0) {
     const hasSbu = Object.values(cas.conf).some(items => items.some(it => activeSbuSet.has(it.supportBu)));
     if (!hasSbu) return false;
+  }
+  if (activeProdLineSet.size > 0) {
+    const hasPl = Object.values(cas.conf).some(items => (items || []).some(it => activeProdLineSet.has(it.prodLine)));
+    if (!hasPl) return false;
   }
   return true;
 }
@@ -1414,6 +1497,7 @@ function parseXLSData(arrayBuffer) {
   const deptSet      = new Set();
   const supportBuSet   = new Set();
   const supportDeptSet = new Set();
+  const prodLineSet    = new Set();
 
   for (let r = 2; r < rows.length; r++) {
     const row    = rows[r];
@@ -1427,6 +1511,7 @@ function parseXLSData(arrayBuffer) {
     const dept        = String(row[col['業務代表部門名稱']]      || '').trim();
     const supportBu   = String(row[col['支援BU']]              || '').trim();
     const supportDept = String(row[col['支援部門名稱']]         || '').trim();
+    const prodLine    = String(row[col['產品線說明']]           || '').trim();
 
     if (!bu || !conf) continue;
 
@@ -1435,6 +1520,7 @@ function parseXLSData(arrayBuffer) {
     if (dept)        deptSet.add(dept);
     if (supportBu)   supportBuSet.add(supportBu);
     if (supportDept) supportDeptSet.add(supportDept);
+    if (prodLine)    prodLineSet.add(prodLine);
 
     if (!raw[bu]) raw[bu] = [];
 
@@ -1478,7 +1564,7 @@ function parseXLSData(arrayBuffer) {
       if (existing) {
         existing.amt += itemAmt;
       } else {
-        caseObj.conf[conf].push({ name: itemName, amt: itemAmt, supportBu, supportDept });
+        caseObj.conf[conf].push({ name: itemName, amt: itemAmt, supportBu, supportDept, prodLine });
       }
     }
   }
@@ -1504,9 +1590,10 @@ function parseXLSData(arrayBuffer) {
   const titleStr = String(titleRow[0] || '');
   const reportDate = new Date().toLocaleDateString('zh-TW', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
+  const prodLineOrder = [...prodLineSet].sort();
   return { raw, deptRaw, supportBuRaw, supportDeptRaw,
            buOrder, deptOrder, supportBuOrder, supportDeptOrder,
-           confOrder, titleStr, reportDate };
+           confOrder, prodLineOrder, titleStr, reportDate };
 }
 
 /* ════════════════════════════════════════════
@@ -1585,6 +1672,20 @@ function buildSbuFilters() {
   msUpdateLabel('sbu');
 }
 
+function buildProdLineFilters() {
+  const panel = document.getElementById('prodline-panel');
+  const head  = panel.querySelector('.ms-panel-head');
+  panel.innerHTML = '';
+  panel.appendChild(head);
+  ALL_PROD_LINES.forEach(pl => {
+    const lbl = document.createElement('label');
+    lbl.className = 'ms-item';
+    lbl.innerHTML = `<input type="checkbox" value="${pl}" checked onchange="onProdLineChg()"><span>${pl}</span>`;
+    panel.appendChild(lbl);
+  });
+  msUpdateLabel('prodline');
+}
+
 /* ── Multi-select dropdown helpers ── */
 function toggleMsPanel(id) {
   const panel   = document.getElementById(id + '-panel');
@@ -1603,7 +1704,7 @@ function msUpdateLabel(id) {
   const trigger = document.getElementById(id + '-trigger');
   if (!trigger) return;
   const label   = trigger.querySelector('.ms-label');
-  const labelName = id === 'quarter' ? '季度' : id === 'sales' ? '業務' : '支援BU';
+  const labelName = id === 'quarter' ? '季度' : id === 'sales' ? '業務' : id === 'sbu' ? '支援BU' : '產品線';
   if (checked === total || total === 0) {
     label.innerHTML = labelName + '&nbsp;<span class="ms-badge">全選</span>';
   } else {
@@ -1613,12 +1714,12 @@ function msUpdateLabel(id) {
 
 function msAll(id) {
   document.querySelectorAll(`#${id}-panel input[type=checkbox]`).forEach(i => i.checked = true);
-  id === 'quarter' ? onQuarterChg() : id === 'sales' ? onSalesChg() : onSbuChg();
+  id === 'quarter' ? onQuarterChg() : id === 'sales' ? onSalesChg() : id === 'sbu' ? onSbuChg() : onProdLineChg();
 }
 
 function msNone(id) {
   document.querySelectorAll(`#${id}-panel input[type=checkbox]`).forEach(i => i.checked = false);
-  id === 'quarter' ? onQuarterChg() : id === 'sales' ? onSalesChg() : onSbuChg();
+  id === 'quarter' ? onQuarterChg() : id === 'sales' ? onSalesChg() : id === 'sbu' ? onSbuChg() : onProdLineChg();
 }
 
 function buildTableHeader() {
@@ -2565,14 +2666,15 @@ function toggleSDeptCase(sdept, ci) {
 
 /* ── Dim tab switching ── */
 function switchDimTab(dim) {
-  ['bu','dept','sbu','sdept','orddet'].forEach(d => {
+  ['bu','dept','sbu','sdept','orddet','caselist'].forEach(d => {
     document.getElementById('dim-' + d).style.display = dim===d ? '' : 'none';
     document.getElementById('dim-tab-' + d).classList.toggle('active', dim===d);
   });
-  // hide the expand-rep-btn for orddet tab (no rep rows in that view)
+  // hide the expand-rep-btn for orddet/caselist tabs (no rep rows in that view)
   const eb = document.getElementById('expand-rep-btn');
-  if (eb) eb.style.display = dim === 'orddet' ? 'none' : '';
+  if (eb) eb.style.display = (dim === 'orddet' || dim === 'caselist') ? 'none' : '';
   if (dim === 'orddet') loadOrderDetail();
+  if (dim === 'caselist') buildCaseListTab();
 }
 
 /* ── Section collapse/expand ── */
@@ -2847,14 +2949,23 @@ function onSbuChg() {
   rebuildAfterFilter();
 }
 
+function onProdLineChg() {
+  activeProdLineSet = new Set();
+  document.querySelectorAll('#prodline-panel input:checked').forEach(cb => activeProdLineSet.add(cb.value));
+  msUpdateLabel('prodline');
+  rebuildAfterFilter();
+}
+
 function clearAllFilters() {
-  document.querySelectorAll('#quarter-panel input, #sales-panel input, #sbu-panel input').forEach(cb => cb.checked = true);
-  activeQuarters = new Set(ALL_QUARTERS);
-  activeSalesSet = new Set(ALL_REPS);
-  activeSbuSet   = new Set(ALL_SUPPORT_BUS);
+  document.querySelectorAll('#quarter-panel input, #sales-panel input, #sbu-panel input, #prodline-panel input').forEach(cb => cb.checked = true);
+  activeQuarters    = new Set(ALL_QUARTERS);
+  activeSalesSet    = new Set(ALL_REPS);
+  activeSbuSet      = new Set(ALL_SUPPORT_BUS);
+  activeProdLineSet = new Set(ALL_PROD_LINES);
   msUpdateLabel('quarter');
   msUpdateLabel('sales');
   msUpdateLabel('sbu');
+  msUpdateLabel('prodline');
   rebuildAfterFilter();
 }
 
@@ -2868,7 +2979,238 @@ function rebuildAfterFilter() {
   buildRepTable();
   buildAchieveSection();
   _renderAllBadges();
+  if (document.getElementById('dim-caselist')?.style.display !== 'none') buildCaseListTab();
   if (searchQ) applySearch();
+}
+
+/* ── 銷售案清單 (flat list) ── */
+let _clSort = { key: 'date', dir: 'asc' };
+let _clFilters = {};          // { bu: Set, conf: Set, rep: Set }
+let _clFilterPanel = null;    // currently open panel element
+
+/* Collect all cases (deduped) that pass global filters.
+   Returns plain objects with all case fields + _bu (BU name from RAW key). */
+function _clGetAllCases() {
+  const seen = new Set();
+  const result = [];
+  BU_ORDER.forEach(bu => {
+    (RAW[bu] || []).forEach(cas => {
+      if (!seen.has(cas.no) && casePasses(cas)) {
+        seen.add(cas.no);
+        result.push({ ...cas, _bu: bu });   // _bu: BU 不在原 case 物件上，從 RAW key 注入
+      }
+    });
+  });
+  return result;
+}
+
+/* Compare helper: date asc → conf index asc (Base=0 … Maximum=4) */
+function _clDefaultCompare(a, b) {
+  const da = a.date || '', db = b.date || '';
+  if (da < db) return -1;
+  if (da > db) return  1;
+  // secondary: conf order
+  const ci = CONF_ORDER.indexOf(primConf(a));
+  const cj = CONF_ORDER.indexOf(primConf(b));
+  return ci - cj;
+}
+
+function buildCaseListTab() {
+  let cases = _clGetAllCases();
+
+  // Apply column-level filters
+  ['bu','conf','rep'].forEach(key => {
+    if (_clFilters[key] && _clFilters[key].size > 0) {
+      cases = cases.filter(r => {
+        if (key === 'bu')   return _clFilters.bu.has(r._bu);
+        if (key === 'conf') return _clFilters.conf.has(primConf(r));
+        if (key === 'rep')  return _clFilters.rep.has(r.rep);
+      });
+    }
+  });
+
+  // Sort
+  const { key, dir } = _clSort;
+  cases.sort((a, b) => {
+    // default (date + conf secondary)
+    if (key === 'date') {
+      const base = _clDefaultCompare(a, b);
+      return dir === 'asc' ? base : -base;
+    }
+    let va, vb;
+    if (key === 'bu')   { va = a._bu  || ''; vb = b._bu  || ''; }
+    if (key === 'conf') { va = CONF_ORDER.indexOf(primConf(a)); vb = CONF_ORDER.indexOf(primConf(b)); }
+    if (key === 'rep')  { va = a.rep  || ''; vb = b.rep  || ''; }
+    if (key === 'amt')  { va = caseTotalActive(a); vb = caseTotalActive(b); }
+    if (typeof va === 'string') va = va.toLowerCase();
+    if (typeof vb === 'string') vb = vb.toLowerCase();
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ?  1 : -1;
+    return 0;
+  });
+
+  // Render sort indicators on headers
+  ['bu','conf','rep','date','amt'].forEach(k => {
+    const th = document.getElementById('cl-th-' + k);
+    if (!th) return;
+    th.classList.remove('sort-asc','sort-desc');
+    if (k === key) th.classList.add(dir === 'asc' ? 'sort-asc' : 'sort-desc');
+    const icon = th.querySelector('.cl-sort-icon');
+    if (icon) icon.textContent = (k === key) ? (dir === 'asc' ? '↑' : '↓') : '↕';
+  });
+
+  // Filter icon active state
+  ['bu','conf','rep'].forEach(k => {
+    const fi = document.getElementById('cl-fi-' + k);
+    if (fi) fi.classList.toggle('active', !!(_clFilters[k] && _clFilters[k].size > 0));
+  });
+
+  // Result count
+  document.getElementById('cl-result-count').textContent = `共 ${cases.length} 筆`;
+
+  // Render rows
+  // Column order: 客戶名稱 | 銷售案名稱 | 結案日 | 信心度 | 總計 | 業務BU | 業務代表 | 追蹤
+  const tbody = document.getElementById('cl-tbody');
+  if (!cases.length) {
+    tbody.innerHTML = `<tr><td colspan="8" class="cl-empty">目前無符合條件的銷售案</td></tr>`;
+  } else {
+    tbody.innerHTML = cases.map(r => {
+      const conf  = primConf(r);
+      const color = CONF_COLOR[conf] || '#888';
+      const amt   = caseTotalActive(r);
+      return `<tr>
+        <td>${escAttr(r.cust)}</td>
+        <td>${escAttr(r.case)}</td>
+        <td class="cl-date">${escAttr(r.date || '')}</td>
+        <td><span class="cl-conf-badge" style="background:${color}20;color:${color};border:1px solid ${color}50">${escAttr(conf)}</span></td>
+        <td class="cl-amt">${fmt(amt)}</td>
+        <td>${escAttr(r._bu)}</td>
+        <td>${escAttr(r.rep)}</td>
+        <td style="text-align:center;padding:4px" onclick="event.stopPropagation()">
+          <button class="opp-trk-btn" data-no="${escAttr(r.no)}" data-case="${escAttr(r.case)}" data-cust="${escAttr(r.cust)}" onclick="openOppTracking(this)">
+            📝<span class="opp-trk-badge" id="otrk-cl-${safe(r.no)}"></span>
+          </button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Render filter badges
+  _clRenderBadges();
+
+  // Refresh tracking badges on rendered rows
+  if (typeof _renderAllBadges === 'function') _renderAllBadges();
+}
+
+function _clRenderBadges() {
+  const strip = document.getElementById('cl-badge-strip');
+  if (!strip) return;
+  const labels = { bu:'業務BU', conf:'信心度', rep:'業務代表' };
+  let html = '';
+  let hasAny = false;
+  ['bu','conf','rep'].forEach(key => {
+    if (_clFilters[key] && _clFilters[key].size > 0) {
+      hasAny = true;
+      [..._clFilters[key]].forEach(val => {
+        html += `<span class="cl-badge">${labels[key]}：${escAttr(val)}<button class="cl-badge-x" onclick="clRemoveFilter('${key}','${escAttr(val)}')" title="移除">&times;</button></span>`;
+      });
+    }
+  });
+  if (hasAny) html += `<button class="cl-clear-all" onclick="clClearAllFilters()">全部清除</button>`;
+  strip.innerHTML = html;
+}
+
+function clSort(key) {
+  if (_clSort.key === key) {
+    _clSort.dir = _clSort.dir === 'asc' ? 'desc' : 'asc';
+  } else {
+    _clSort.key = key;
+    _clSort.dir = key === 'amt' ? 'desc' : 'asc';
+  }
+  buildCaseListTab();
+}
+
+function clOpenFilter(key, iconEl) {
+  if (_clFilterPanel) { _clFilterPanel.remove(); _clFilterPanel = null; }
+  const th = iconEl.closest('th');
+  const rect = th.getBoundingClientRect();
+  const scrollTop  = window.scrollY  || document.documentElement.scrollTop;
+  const scrollLeft = window.scrollX  || document.documentElement.scrollLeft;
+
+  // Values from ALL cases (only global filter applied, not column filters)
+  const allCases = _clGetAllCases();
+  const valSet = new Set();
+  allCases.forEach(r => {
+    if (key === 'bu')   valSet.add(r._bu || '');
+    if (key === 'conf') valSet.add(primConf(r));
+    if (key === 'rep')  valSet.add(r.rep || '');
+  });
+  const vals = [...valSet].filter(Boolean).sort();
+  const currentSel = _clFilters[key] || new Set(vals);
+
+  const panel = document.createElement('div');
+  panel.className = 'cl-filter-panel';
+  panel.style.top  = (rect.bottom + scrollTop  + 4) + 'px';
+  panel.style.left = (rect.left   + scrollLeft)     + 'px';
+  panel.innerHTML = `
+    <div class="cl-filter-panel-inner" id="cl-fp-inner">
+      ${vals.map(v => `<label class="cl-filter-item"><input type="checkbox" value="${escAttr(v)}" ${currentSel.has(v) ? 'checked' : ''}>${escAttr(v)}</label>`).join('')}
+    </div>
+    <div class="cl-filter-ctrl">
+      <button class="cl-filter-all-btn" onclick="clFilterSelAll(true)">全選</button>
+      <button class="cl-filter-all-btn" onclick="clFilterSelAll(false)">全消</button>
+      <button class="cl-filter-apply-btn" onclick="clApplyFilter('${key}')">套用</button>
+    </div>`;
+  document.body.appendChild(panel);
+  _clFilterPanel = panel;
+
+  setTimeout(() => {
+    document.addEventListener('click', function _clClose(e) {
+      if (!panel.contains(e.target)) {
+        panel.remove(); _clFilterPanel = null;
+        document.removeEventListener('click', _clClose);
+      }
+    });
+  }, 0);
+}
+
+function clFilterSelAll(sel) {
+  if (!_clFilterPanel) return;
+  _clFilterPanel.querySelectorAll('#cl-fp-inner input[type=checkbox]').forEach(cb => cb.checked = sel);
+}
+
+function clApplyFilter(key) {
+  if (!_clFilterPanel) return;
+  const checked = new Set();
+  _clFilterPanel.querySelectorAll('#cl-fp-inner input[type=checkbox]:checked').forEach(cb => checked.add(cb.value));
+
+  const allCases = _clGetAllCases();
+  const valSet = new Set();
+  allCases.forEach(r => {
+    if (key === 'bu')   valSet.add(r._bu || '');
+    if (key === 'conf') valSet.add(primConf(r));
+    if (key === 'rep')  valSet.add(r.rep || '');
+  });
+  const allVals = [...valSet].filter(Boolean);
+
+  if (checked.size === allVals.length) delete _clFilters[key];
+  else _clFilters[key] = checked;
+
+  if (_clFilterPanel) { _clFilterPanel.remove(); _clFilterPanel = null; }
+  buildCaseListTab();
+}
+
+function clRemoveFilter(key, val) {
+  if (_clFilters[key]) {
+    _clFilters[key].delete(val);
+    if (_clFilters[key].size === 0) delete _clFilters[key];
+  }
+  buildCaseListTab();
+}
+
+function clClearAllFilters() {
+  _clFilters = {};
+  buildCaseListTab();
 }
 
 /* ── Expand / collapse ALL rep-group rows at once ── */
@@ -3216,15 +3558,18 @@ function handleFile(file) {
       ALL_REPS       = [...repSet].sort();
       ALL_QUARTERS   = [...qSet].sort();
       ALL_SUPPORT_BUS = SUPPORT_BU_ORDER.slice();
-      activeQuarters = new Set(ALL_QUARTERS);
-      activeSalesSet = new Set(ALL_REPS);
-      activeSbuSet   = new Set(ALL_SUPPORT_BUS);
+      ALL_PROD_LINES  = result.prodLineOrder || [];
+      activeQuarters    = new Set(ALL_QUARTERS);
+      activeSalesSet    = new Set(ALL_REPS);
+      activeSbuSet      = new Set(ALL_SUPPORT_BUS);
+      activeProdLineSet = new Set(ALL_PROD_LINES);
 
       buildHeader(result.titleStr, result.reportDate);
       buildFilters();
       buildQuarterFilters();
       buildSalesFilters();
       buildSbuFilters();
+      buildProdLineFilters();
       buildLegend();
       buildTableHeader();
       buildDeptTableHeader();
@@ -3449,11 +3794,20 @@ function applyLoadedData(d) {
   ALL_SUPPORT_BUS    = SUPPORT_BU_ORDER.slice();
   activeSbuSet       = new Set(ALL_SUPPORT_BUS);
 
+  const prodLineSet3 = new Set();
+  BU_ORDER.forEach(bu => (RAW[bu]||[]).forEach(cas => {
+    Object.values(cas.conf || {}).forEach(items =>
+      (items || []).forEach(it => { if (it.prodLine) prodLineSet3.add(it.prodLine); })
+    );
+  }));
+  ALL_PROD_LINES    = [...prodLineSet3].sort();
+  activeProdLineSet = new Set(ALL_PROD_LINES);
+
   document.getElementById('app-title').textContent = '銷售案 Forecast 彙整';
   document.getElementById('app-subtitle').textContent =
     `資料來源：${d.filename} ｜ 歷史記錄：${d.uploadedAt || ''}`;
 
-  buildFilters(); buildQuarterFilters(); buildSalesFilters(); buildSbuFilters();
+  buildFilters(); buildQuarterFilters(); buildSalesFilters(); buildSbuFilters(); buildProdLineFilters();
   buildLegend(); buildTableHeader(); buildDeptTableHeader(); buildSupportBuTableHeader(); buildSupportDeptTableHeader(); buildRepTableHeader();
   buildCards(); buildBar(); buildTable(); buildDeptTable(); buildSupportBuTable(); buildSupportDeptTable(); buildRepTable();
   buildAchieveSection();
