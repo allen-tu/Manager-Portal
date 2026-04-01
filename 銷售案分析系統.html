@@ -611,8 +611,12 @@
   .opp-trk-item:last-child { border-bottom:none; }
   .opp-trk-check { margin-top:2px; width:15px; height:15px; cursor:pointer; accent-color:#1a3a6b; flex-shrink:0; }
   .opp-trk-item-body { flex:1; min-width:0; }
-  .opp-trk-note { font-size:13px; color:#222; line-height:1.4; }
+  .opp-trk-note { font-size:13px; color:#222; line-height:1.4; cursor:pointer; border-radius:4px; padding:2px 4px; margin:-2px -4px; transition:background .15s; }
+  .opp-trk-note:hover { background:#f0f4ff; }
+  .opp-trk-note::after { content:'✏️'; font-size:10px; margin-left:5px; opacity:0; transition:opacity .15s; }
+  .opp-trk-note:hover::after { opacity:0.5; }
   .opp-trk-note.done { text-decoration:line-through; color:#aaa; }
+  .opp-trk-note-edit { font-size:13px; color:#222; line-height:1.4; width:100%; box-sizing:border-box; border:1.5px solid #2d5ea8; border-radius:4px; padding:3px 6px; outline:none; font-family:inherit; resize:none; background:#f8faff; overflow:hidden; }
   .opp-trk-time { font-size:11px; color:#aaa; margin-top:2px; }
   .opp-trk-del { background:none; border:none; color:#ddd; font-size:14px; cursor:pointer; padding:0 2px; flex-shrink:0; line-height:1; }
   .opp-trk-del:hover { color:#e53935; }
@@ -643,7 +647,10 @@
   .opp-list-item { display:flex; align-items:flex-start; gap:10px; padding:7px 10px; border-radius:5px; }
   .opp-list-item:hover { background:#fafbff; }
   .opp-list-check { margin-top:2px; width:14px; height:14px; cursor:pointer; accent-color:#1a3a6b; flex-shrink:0; }
-  .opp-list-note { flex:1; font-size:13px; color:#222; line-height:1.4; }
+  .opp-list-note { flex:1; font-size:13px; color:#222; line-height:1.4; cursor:pointer; border-radius:4px; padding:2px 4px; margin:-2px -4px; transition:background .15s; }
+  .opp-list-note:hover { background:#f0f4ff; }
+  .opp-list-note::after { content:'✏️'; font-size:10px; margin-left:5px; opacity:0; transition:opacity .15s; }
+  .opp-list-note:hover::after { opacity:0.5; }
   .opp-list-note.done { text-decoration:line-through; color:#aaa; }
   .opp-list-time { font-size:11px; color:#aaa; }
   .opp-list-empty { text-align:center; color:#bbb; font-size:13px; padding:40px 0; }
@@ -3018,6 +3025,10 @@ function _clDefaultCompare(a, b) {
 function buildCaseListTab() {
   let cases = _clGetAllCases();
 
+  // Filter out cases with no amount in currently active confidence levels
+  // (信心度 checkbox filter — casePasses() does not check this)
+  cases = cases.filter(r => caseTotalActive(r) > 0);
+
   // Apply column-level filters
   ['bu','conf','rep'].forEach(key => {
     if (_clFilters[key] && _clFilters[key].size > 0) {
@@ -3513,6 +3524,7 @@ function refresh() {
   buildSupportBuTable();
   buildSupportDeptTable();
   buildAchieveSection();
+  if (document.getElementById('dim-caselist')?.style.display !== 'none') buildCaseListTab();
 }
 
 /* ════════════════════════════════════════════
@@ -4928,7 +4940,7 @@ function _oppItemHTML(it) {
     <div class="opp-trk-item" id="opp-trk-item-${it.id}">
       <input type="checkbox" class="opp-trk-check" ${it.is_done?'checked':''} onchange="toggleOppDone(${it.id},this.checked)">
       <div class="opp-trk-item-body">
-        <div class="opp-trk-note${it.is_done?' done':''}" id="opp-trk-note-${it.id}">${escAttr(it.note)}</div>
+        <div class="opp-trk-note${it.is_done?' done':''}" id="opp-trk-note-${it.id}" onclick="oppNoteEdit(${it.id})" title="點擊編輯">${escAttr(it.note)}</div>
         <div class="opp-trk-time">建立於 ${it.created_at||''}</div>
         ${doneInfo}
         <div class="opp-trk-done-expand" id="opp-trk-done-exp-${it.id}" style="display:none">
@@ -5010,6 +5022,99 @@ async function _saveDone(id, isDone, doneNote, doneAt) {
   await loadOppTrackingSummary();
 }
 
+/* ── Inline note editing (shared by modal + global list) ──
+   prefix: 'opp-trk-note' (modal) | 'opp-list-note' (global list)          */
+function oppNoteEdit(id, prefix) {
+  prefix = prefix || 'opp-trk-note';
+  const noteEl = document.getElementById(`${prefix}-${id}`);
+  if (!noteEl || noteEl.dataset.editing === '1') return;
+
+  const original = noteEl.dataset.original ?? noteEl.textContent;
+  noteEl.dataset.original = original;
+  noteEl.dataset.editing  = '1';
+
+  const ta = document.createElement('textarea');
+  ta.className = 'opp-trk-note-edit';
+  ta.id        = `${prefix}-edit-${id}`;
+  ta.value     = original;
+  ta.rows      = 1;
+
+  const autoGrow = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+  noteEl.replaceWith(ta);
+  autoGrow();
+  ta.addEventListener('input', autoGrow);
+  ta.focus();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  ta.addEventListener('blur', () => oppNoteSave(id, original, prefix), { once: true });
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      ta.removeEventListener('blur', () => oppNoteSave(id, original, prefix));
+      oppNoteCancel(id, original, prefix, ta);
+    }
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.isComposing) {
+      e.preventDefault();
+      ta.blur();
+    }
+  });
+}
+
+async function oppNoteSave(id, original, prefix) {
+  prefix = prefix || 'opp-trk-note';
+  const ta = document.getElementById(`${prefix}-edit-${id}`);
+  if (!ta) return;
+  const newVal = ta.value.trim();
+
+  // Determine done state from the item container's checkbox
+  const itemPrefix = prefix === 'opp-trk-note' ? 'opp-trk-item' : 'opp-list-item';
+  const isDone = !!document.getElementById(`${itemPrefix}-${id}`)?.querySelector('input[type=checkbox]')?.checked;
+  const noteClass = (prefix === 'opp-trk-note' ? 'opp-trk-note' : 'opp-list-note') + (isDone ? ' done' : '');
+
+  const noteDiv = document.createElement('div');
+  noteDiv.id        = `${prefix}-${id}`;
+  noteDiv.className = noteClass;
+  noteDiv.onclick   = () => oppNoteEdit(id, prefix);
+  noteDiv.title     = '點擊編輯';
+
+  if (!newVal || newVal === original) {
+    noteDiv.textContent = original;
+    ta.replaceWith(noteDiv);
+    return;
+  }
+
+  noteDiv.textContent = newVal;
+  ta.replaceWith(noteDiv);
+
+  try {
+    const res = await fetch(`/api/opp_tracking/${id}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ note: newVal })
+    });
+    if (!res.ok) throw new Error('save failed');
+    // Cross-sync: update the counterpart view if it's open
+    const otherPrefix = prefix === 'opp-trk-note' ? 'opp-list-note' : 'opp-trk-note';
+    const otherEl = document.getElementById(`${otherPrefix}-${id}`);
+    if (otherEl) otherEl.textContent = newVal;
+  } catch {
+    noteDiv.textContent = original;
+    showToast('⚠️ 儲存失敗，已還原原始內容');
+  }
+}
+
+function oppNoteCancel(id, original, prefix, ta) {
+  prefix = prefix || 'opp-trk-note';
+  const noteClass = prefix === 'opp-trk-note' ? 'opp-trk-note' : 'opp-list-note';
+  const noteDiv = document.createElement('div');
+  noteDiv.id          = `${prefix}-${id}`;
+  noteDiv.className   = noteClass;
+  noteDiv.textContent = original;
+  noteDiv.onclick     = () => oppNoteEdit(id, prefix);
+  noteDiv.title       = '點擊編輯';
+  if (ta && ta.parentNode) ta.replaceWith(noteDiv);
+}
+
 async function deleteOppItem(id) {
   await fetch(`/api/opp_tracking/${id}`, { method: 'DELETE' });
   const el = document.getElementById(`opp-trk-item-${id}`);
@@ -5064,7 +5169,7 @@ async function _loadOppList() {
       <div class="opp-list-item" id="opp-list-item-${it.id}">
         <input type="checkbox" class="opp-list-check" ${it.is_done?'checked':''} onchange="toggleOppDoneList(${it.id},this.checked)">
         <div style="flex:1;min-width:0">
-          <div class="opp-list-note${it.is_done?' done':''}" id="opp-list-note-${it.id}">${escAttr(it.note)}</div>
+          <div class="opp-list-note${it.is_done?' done':''}" id="opp-list-note-${it.id}" onclick="oppNoteEdit(${it.id},'opp-list-note')" title="點擊編輯">${escAttr(it.note)}</div>
           <div class="opp-list-time">建立於 ${it.created_at||''}</div>
           ${doneInfo}
           <div class="opp-trk-done-expand" id="opp-list-done-exp-${it.id}" style="display:none">

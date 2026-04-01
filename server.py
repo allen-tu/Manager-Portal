@@ -1102,6 +1102,15 @@ def opp_tracking_post():
 @app.route('/api/opp_tracking/<int:tid>', methods=['PUT'])
 def opp_tracking_put(tid):
     data = request.get_json() or {}
+    # Inline note edit: only update note field
+    if 'note' in data:
+        note = str(data['note']).strip()
+        if not note:
+            return jsonify({'ok': False, 'error': 'note cannot be empty'}), 400
+        with get_db() as conn:
+            conn.execute("UPDATE opp_tracking SET note=? WHERE id=?", (note, tid))
+            conn.commit()
+        return jsonify({'ok': True})
     is_done   = int(bool(data.get('is_done', False)))
     done_note = data.get('done_note', None)
     done_at   = data.get('done_at',   None)
