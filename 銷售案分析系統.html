@@ -1804,6 +1804,7 @@ function buildDeptTable() {
         .map(cas => ({ cas, origIdx: (DEPT_RAW[dept]||[]).indexOf(cas) }))
         .sort((a, b) => (a.cas.date || '').localeCompare(b.cas.date || ''));
       if (!confCases.length) return;
+      if (!active.has(gconf)) return;
 
       const cgTr = document.createElement('tr');
       cgTr.className = 'conf-group-row';
@@ -2032,6 +2033,7 @@ function buildTable() {
         .map(cas => ({ cas, origIdx: (RAW[bu]||[]).indexOf(cas) }))
         .sort((a, b) => (a.cas.date || '').localeCompare(b.cas.date || ''));
       if (!confCases.length) return;
+      if (!active.has(gconf)) return;
 
       /* Conf group row */
       const cgTr = document.createElement('tr');
@@ -2175,6 +2177,7 @@ function buildSupportBuTable() {
         .map(cas => ({ cas, origIdx: (SUPPORT_BU_RAW[sbu]||[]).indexOf(cas) }))
         .sort((a,b) => (a.cas.date||'').localeCompare(b.cas.date||''));
       if (!confCases.length) return;
+      if (!active.has(gconf)) return;
 
       const cgTr = document.createElement('tr');
       cgTr.className = 'conf-group-row';
@@ -2318,6 +2321,7 @@ function buildSupportDeptTable() {
         .map(cas => ({ cas, origIdx: (SUPPORT_DEPT_RAW[sdept]||[]).indexOf(cas) }))
         .sort((a,b) => (a.cas.date||'').localeCompare(b.cas.date||''));
       if (!confCases.length) return;
+      if (!active.has(gconf)) return;
 
       const cgTr = document.createElement('tr');
       cgTr.className = 'conf-group-row';
@@ -3368,6 +3372,14 @@ function applyFilter() {
   if (tdGT) tdGT.textContent = fmt(grandTotalActive());
 
   /* Table 2 is fully rebuilt by refresh() → buildRepTable(), no in-place update needed */
+
+  /* ── Toggle conf-group-row and rep-group-row visibility by active conf ── */
+  document.querySelectorAll('tr.conf-group-row').forEach(tr => {
+    tr.style.display = active.has(tr.dataset.conf) ? '' : 'none';
+  });
+  document.querySelectorAll('tr.rep-group-row').forEach(tr => {
+    if (!active.has(tr.dataset.conf)) tr.classList.remove('vis');
+  });
 
   /* ── Toggle case visibility (only if rep group is open) ── */
   document.querySelectorAll('tr.case-row').forEach(tr => {
